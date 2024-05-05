@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MySQL 데이터 출력</title>
+</head>
+<body>
+    <h1>MySQL 데이터 출력</h1>
+    <ul>
+        <% data.forEach(function(db) { %>
+            <li><%= db.deptno %> <%= db.deptname %> <%= db.floor %></li>
+        <% }); %>
+    </ul>
+</body>
+</html>
