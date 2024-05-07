@@ -23,8 +23,6 @@ db.connect(function(err) {
   console.log('연결된듯');
 });
 
-app.use(express.static(__dirname + '/public')); //public폴더에있는 자료들을 html에 가져다 쓸수있음
-
 app.get('/', (요청, 응답) =>{
     db.query('select * from company.department', function(에러,결과,필드){
         if(에러){
@@ -39,6 +37,7 @@ app.get('/sign', (요청,응답) =>{
   응답.render('sign.ejs')
 })
 
+//포스트요청하면 답오는지 확인하는 코드
 // app.post('/sign',(요청,응답) =>{
 //   console.log(요청.body.username)
 // })
