@@ -4,13 +4,28 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MySQL 데이터 출력</title>
+    <link href="/main.css" rel="stylesheet">
 </head>
 <body>
-    <h1>MySQL 데이터 출력</h1>
-    <ul>
-        <% data.forEach(function(db) { %>
-            <li><%= db.deptno %> <%= db.deptname %> <%= db.floor %></li>
-        <% }); %>
-    </ul>
+    <h1>사용자 데이터 출력</h1>
+    <body class="grey-bg">
+        <div class="white-bg">
+            <% if (!사용자 || !사용자.memberid || !사용자.nickname) { %>
+                <!-- 로그인되어 있지 않은 경우 -->
+                <a href="/login">로그인</a>
+            <% } else { %>
+                <!-- 로그인되어 있는 경우 -->
+                <form action="/logout" method="GET">
+                    <button type="submit">로그아웃</button>
+                </form>
+                <div class="list-box">
+                    <h4>회원번호</h4>
+                    <p><%= 사용자.memberid %></p>
+                    <h4>닉네임</h4>
+                    <p><%= 사용자.nickname %></p>
+                </div>
+            <% } %>
+        </div> 
+    </body>
 </body>
 </html>
