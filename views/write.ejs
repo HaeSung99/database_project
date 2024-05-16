@@ -1,19 +1,54 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>글쓰기</title>
+  <meta charset="UTF-8">
+  <title>글쓰기</title>
 </head>
 <body>
-    <h1>글쓰기</h1>
-    <form action="/write" method="POST">
-        <label for="title">제목:</label>
-        <input type="text" id="title" name="title"><br><br>
-        <label for="content">글내용:</label>
-        <input type="text" id="content" name="content"><br><br>
-        <input type="text" id="nickname" name="nickname" ><br><br>
-        <button type="submit">작성하기</button>
-    </form>
+  <h1>글쓰기</h1>
+  <form action="/write" method="post" enctype="multipart/form-data">
+    <label for="title">제목:</label>
+    <input type="text" id="title" name="title"><br><br>
+    <label for="content">내용:</label>
+    <textarea id="content" name="content"></textarea><br><br>
+    <label for="image">이미지:</label>
+    <input type="file" id="image" name="image" accept="image/*"><br><br>
+    <img id="imagePreview" src="" alt="이미지 미리보기" style="display:none; max-width: 300px; max-height: 300px;"><br><br>
+    <input type="hidden" id="userId" name="userId" value="<%= user.MemberNumber %>"><br><br>
+    <input type="hidden" id="nickname" name="nickname" value="<%= user.Nickname %>"><br><br>
+    <input type="hidden" id="timestamp" name="timestamp"><br><br>
+
+    <button type="submit">작성</button>
+  </form>
+
+  <script>
+    
+    // 작성 시간을 MySQL DATETIME 형식에 맞게 설정
+    function formatDateToMysqlDatetime(date) {
+      return date.getFullYear() + '-' +
+        ('0' + (date.getMonth() + 1)).slice(-2) + '-' +
+        ('0' + date.getDate()).slice(-2) + ' ' +
+        ('0' + date.getHours()).slice(-2) + ':' +
+        ('0' + date.getMinutes()).slice(-2) + ':' +
+        ('0' + date.getSeconds()).slice(-2);
+    }
+    // 작성 시간을 현재 시간으로 설정
+    document.getElementById('timestamp').value = formatDateToMysqlDatetime(new Date());
+
+    // 이미지 미리보기 설정
+    document.getElementById('image').addEventListener('change', function(event) {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const img = document.getElementById('imagePreview');
+          img.src = e.target.result;
+          img.style.display = 'block';
+        }
+        reader.readAsDataURL(file);
+      }
+    });
+  </script>
+
 </body>
 </html>

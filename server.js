@@ -2,111 +2,173 @@ const express = require('express');
 const app = express();
 const mysql = require('mysql2');
 const session = require('express-session');
-app.use(express.json());
-app.use(express.urlencoded({extended:true}));
-app.use(express.static(__dirname + '/public'));
+const multer = require('multer');
+const path = require('path');
 
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(express.static(__dirname + '/public'));
 
 app.set('view engine', 'ejs');
 app.set('views', __dirname + '/views');
 
 const db = mysql.createConnection({
-host : 'localhost',  
-user : 'root',
-password : 'haesung8494@',
-database : 'project'
+  host: 'localhost',
+  user: 'root',
+  password: 'haesung8494@',
+  database: 'project'
 });
 
 // 데이터베이스 연결
 db.connect(function(err) {
   if (err) {
-    console.error('연결실패 :' + err.stack);
+    console.error('연결 실패: ' + err.stack);
     return;
   }
-  console.log('연결된듯');
+  console.log('연결 성공');
 });
 
-// Express 앱에 세션 미들웨어 추가
+// Multer 설정
+const storage = multer.diskStorage({
+  destination: function(req, file, cb) {
+    cb(null, 'public/uploads/')
+  },
+  filename: function(req, file, cb) {
+    cb(null, Date.now() + path.extname(file.originalname))
+  }
+});
+
+const upload = multer({ storage: storage });
+
 app.use(session({
-  secret: 'your-secret-key', // 세션을 암호화하기 위한 비밀키
+  secret: 'your-secret-key',
   resave: false,
   saveUninitialized: true,
   cookie: {
-    maxAge: 600000 // 세션 쿠키의 유효기간을 밀리초 단위로 설정 (10분으로 설정함)
+    maxAge: 1200000 // 세션 쿠키의 유효기간을 밀리초 단위로 설정 (20분으로 설정)
   }
 }));
 
-app.get('/', (요청, 응답) =>{
-        const 사용자 = 요청.session.user || {};
-        응답.render('main.ejs', { 사용자 : 사용자 })
+app.get('/', (req, res) => {
+  const user = req.session.user || {};
+  const getPosts = 'SELECT * FROM post';
+  db.query(getPosts, (err, results) => {
+    if (err) {
+      console.error('게시글 가져오기 실패: ' + err.stack);
+      return;
+    }
+    res.render('main.ejs', { user: user, post: results });
   });
+});
 
-app.get('/sign', (요청,응답) =>{
-  응답.render('sign.ejs')
-})
+app.get('/sign', (req, res) => {
+  req.session.message = null;
+  res.render('sign.ejs', { message: null });
+});
 
-app.get('/write', (요청,응답) =>{
-  응답.render('write.ejs')
-})
+app.get('/write', (req, res, next) => {
+  if (!req.session.user) {
+    return res.status(401).send('<script type="text/javascript">alert("로그인이 필요한 서비스입니다."); window.location="/login"; </script>');
+  }
+  next();
+}, (req, res) => {
+  res.render('write.ejs', { user: req.session.user });
+});
 
-app.get('/login', (요청,응답) =>{
-  요청.session.message = null;
-  응답.render('login.ejs', { message:null})
-})
+app.get('/login', (req, res) => {
+  req.session.message = null;
+  res.render('login.ejs', { message: null });
+});
 
 // 로그인 기능
-app.post('/login',(요청,응답) =>{
-  const { username,  password } = 요청.body;
-  const 로그인 = 'select memberid, nickname from member where username = ? and password = ?';
-  db.query(로그인, [username, password], (에러, 결과) => {
-    if (에러) {
-        console.error('로그인실패' + 에러.stack);
-        return;
+app.post('/login', (req, res) => {
+  const { userId, userPassword } = req.body;
+  const loginQuery = 'SELECT MemberNumber, Nickname FROM Member WHERE MemberID = ? AND MemberPassword = ?';
+  db.query(loginQuery, [userId, userPassword], (err, results) => {
+    if (err) {
+      console.error('로그인 실패: ' + err.stack);
+      return;
     }
-    const 사용자 = 결과[0];
-    console.log(사용자);
-    if (사용자) {
-      요청.session.user = 사용자;
-      응답.redirect('/');
+    const user = results[0];
+    if (user) {
+      console.log(user);
+      req.session.user = user;
+      res.redirect('/');
     } else {
-      응답.render('login', { message: '아이디 또는 비밀번호가 잘못되었습니다.' })
+      res.render('login', { message: '아이디 또는 비밀번호가 잘못되었습니다.' });
     }
   });
 });
 
 // 로그아웃 기능
-app.get('/logout', (요청, 응답) => {
-  // 세션 제거
-  요청.session.destroy((err) => {
-      if (err) {
-          console.error('세션 제거 실패: ' + err);
-          return;
-      }
-      // 로그아웃 후 리다이렉트
-      응답.redirect('/');
+app.get('/logout', (req, res) => {
+  req.session.destroy((err) => {
+    if (err) {
+      console.error('세션 제거 실패: ' + err);
+      return;
+    }
+    res.redirect('/');
   });
 });
 
-// 회원가입 정보받는곳
-app.post('/sign', (요청,응답)=>{
-  const { username,  password, nickname } = 요청.body;
+// 회원가입 정보 받는 곳
+app.post('/sign', (req, res) => {
+  const { userId, userPassword, userNickname } = req.body;
 
-  // 데이터베이스에 새로운 회원 정보 추가
-  const 회원가입 = 'INSERT INTO member (username, password, nickname) VALUES (?, ?, ?)';
-  db.query(회원가입, [username, password, nickname], (에러, 결과) => {
-      if (에러) {
-          console.error('회원정보추가실패: ' + 에러.stack);
+  // 입력값 검증
+  if (!userId || !userPassword || !userNickname) {
+    return res.render('sign', { message: '모든 빈칸을 채워주세요.' });
+  }
+
+  const checkIdQuery = 'SELECT * FROM Member WHERE MemberID = ?';
+  db.query(checkIdQuery, [userId], (err, results) => {
+    if (err) {
+      console.error('아이디 확인 실패: ' + err.stack);
+      return;
+    }
+
+    if (results.length > 0) {
+      return res.render('sign', { message: '이미 존재하는 아이디입니다.' });
+    } else {
+      const checkNicknameQuery = 'SELECT * FROM Member WHERE MemberID = ?';
+      db.query(checkNicknameQuery, [userNickname], (err, results) => {
+        if (err) {
+          console.error('닉네임 확인 실패: ' + err.stack);
           return;
-      }
-      console.log('회원번호: ', 결과.insertId);
-      응답.send('회원가입에 성공했습니다.');
+        }
+
+        if (results.length > 0) {
+          return res.render('sign', { message: '이미 존재하는 닉네임입니다.' });
+        } else {
+          const signUpQuery = 'INSERT INTO Member (MemberID, MemberPassword, Nickname) VALUES (?, ?, ?)';
+          db.query(signUpQuery, [userId, userPassword, userNickname], (err, results) => {
+            if (err) {
+              console.error('회원정보 추가 실패: ' + err.stack);
+              return;
+            }
+            res.redirect('/');
+          });
+        }
+      });
+    }
   });
-
 });
-    
 
+// 글쓰기 정보 받는 곳
+app.post('/write', upload.single('image'), (req, res) => {
+  const { title, content, nickname, userId, timestamp } = req.body;
+  const imagePath = req.file ? `/uploads/${req.file.filename}` : null;
+  const writePostQuery = 'INSERT INTO Post (AuthorMemberNumber, AuthorNickname, Title, WritingTime, Content, ImagePath) VALUES (?, ?, ?, ?, ?, ?)';
+  db.query(writePostQuery, [userId, nickname, title, timestamp, content, imagePath], (err, results) => {
+    if (err) {
+      console.error('게시글 작성 실패: ' + err.stack);
+      return;
+    }
+    res.redirect('/');
+  });
+});
 
 // 서버 실행
-  app.listen(8080, () => {
-    console.log('http://localhost:8080 에서 서버 실행중')
+app.listen(8080, () => {
+  console.log('http://localhost:8080 에서 서버 실행중');
 });

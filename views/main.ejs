@@ -10,7 +10,7 @@
     <h1>사용자 데이터 출력</h1>
     <body class="grey-bg">
         <div class="white-bg">
-            <% if (!사용자 || !사용자.memberid || !사용자.nickname) { %>
+            <% if (!user || !user.MemberNumber || !user.Nickname) { %>
                 <!-- 로그인되어 있지 않은 경우 -->
                 <a href="/login">로그인</a>
             <% } else { %>
@@ -20,9 +20,9 @@
                 </form>
                 <div class="list-box">
                     <h4>회원번호</h4>
-                    <p><%= 사용자.memberid %></p>
+                    <p><%= user.MemberNumber %></p>
                     <h4>닉네임</h4>
-                    <p><%= 사용자.nickname %></p>
+                    <p><%= user.Nickname %></p>
                 </div>
             <% } %>
         </div> 
