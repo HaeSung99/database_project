@@ -1,19 +1,124 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>글쓰기</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>글쓰기</title>
+  <link rel="stylesheet" href="/write.css">
 </head>
 <body>
-    <h1>글쓰기</h1>
-    <form action="/write" method="POST">
-        <label for="title">제목:</label>
-        <input type="text" id="title" name="title"><br><br>
-        <label for="content">글내용:</label>
-        <input type="text" id="content" name="content"><br><br>
-        <input type="text" id="nickname" name="nickname" ><br><br>
-        <button type="submit">작성하기</button>
-    </form>
+  <header>
+    <button class="back-button" onclick="history.back()">
+      <i class="fas fa-arrow-left"></i> 뒤로가기
+    </button>
+  </header>
+  
+  <h1>글쓰기</h1>
+  <form id="writeForm" action="/write" method="post" enctype="multipart/form-data">
+    <div class="form-container">
+      <div class="form-group">
+        <label for="title">레시피 제목</label>
+        <input type="text" id="title" name="title" required>
+      </div>
+      <div class="form-group">
+        <label for="content">요리소개</label>
+        <textarea id="content" name="content" rows="4" required></textarea>
+      </div>
+      <div class="form-group">
+        <label for="video">동영상</label>
+        <input type="text" id="video" name="video" placeholder="동영상 URL을 입력하세요">
+      </div>
+      <div class="form-group">
+        <label for="category">카테고리</label>
+        <select id="category" name="category">
+          <option value="종류별">종류별</option>
+          <option value="상황별">상황별</option>
+          <option value="방법별">방법별</option>
+          <option value="재료별">재료별</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="people">요리정보</label>
+        <div class="info-group">
+          <select id="people" name="people">
+            <option value="인원">인원</option>
+            <option value="1인">1인</option>
+            <option value="2인">2인</option>
+            <option value="3인">3인</option>
+            <option value="4인">4인</option>
+            <!-- 다른 옵션 추가 -->
+          </select>
+          <select id="time" name="time">
+            <option value="시간">시간</option>
+            <option value="10분 이내">10분 이내</option>
+            <option value="20분 이내">20분 이내</option>
+            <option value="30분 이내">30분 이내</option>
+            <!-- 다른 옵션 추가 -->
+          </select>
+          <select id="difficulty" name="difficulty">
+            <option value="난이도">난이도</option>
+            <option value="초급">초급</option>
+            <option value="중급">중급</option>
+            <option value="고급">고급</option>
+            <!-- 다른 옵션 추가 -->
+          </select>
+        </div>
+      </div>
+      <div class="form-group image-upload">
+        <label for="image">요리 대표 사진</label>
+        <input type="file" id="image" name="image" accept="image/*">
+        <img id="imagePreview" src="" alt="이미지 미리보기" style="display:none;">
+      </div>
+      <input type="hidden" id="userId" name="userId" value="<%= user.MemberNumber %>">
+      <input type="hidden" id="nickname" name="nickname" value="<%= user.Nickname %>">
+      <input type="hidden" id="timestamp" name="timestamp">
+
+      <button type="submit">작성</button>
+    </div>
+  </form>
+
+  <script>
+    // 작성 시간을 MySQL DATETIME 형식에 맞게 설정
+    function formatDateToMysqlDatetime(date) {
+      return date.getFullYear() + '-' +
+        ('0' + (date.getMonth() + 1)).slice(-2) + '-' +
+        ('0' + date.getDate()).slice(-2) + ' ' +
+        ('0' + date.getHours()).slice(-2) + ':' +
+        ('0' + date.getMinutes()).slice(-2) + ':' +
+        ('0' + date.getSeconds()).slice(-2);
+    }
+
+    document.getElementById('timestamp').value = formatDateToMysqlDatetime(new Date());
+
+    // 이미지 미리보기 설정
+    document.getElementById('image').addEventListener('change', function(event) {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const img = document.getElementById('imagePreview');
+          img.src = e.target.result;
+          img.style.display = 'block';
+        }
+        reader.readAsDataURL(file);
+      }
+    });
+
+    // 입력 필드 검증
+    document.getElementById('writeForm').addEventListener('submit', function(event) {
+      const title = document.getElementById('title').value.trim();
+      const content = document.getElementById('content').value.trim();
+      const people = document.getElementById('people').value;
+      const time = document.getElementById('time').value;
+      const difficulty = document.getElementById('difficulty').value;
+
+      if (!title || !content || !document.getElementById('image').value || 
+          people === '인원' || time === '시간' || difficulty === '난이도') {
+        event.preventDefault();
+        alert('모든 빈칸을 채워주세요.');
+      }
+    });
+  </script>
+
 </body>
 </html>

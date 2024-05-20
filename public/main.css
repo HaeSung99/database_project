@@ -1,21 +1,143 @@
-.grey-bg {
-  background: #eee;
+body {
+  font-family: Arial, sans-serif;
+  background-color: #f0f0f0;
+  margin: 0;
+  padding: 0;
 }
-.white-bg {
-  background: white;
-  margin: 20px;
+
+header {
+  background-color: #333;
+  color: white;
+  padding: 10px 0;
+  align-content: center;
+  text-align: center;
+  justify-content: center;
+}
+
+header a {
+  color: white;
+  margin: 0 15px;
+  text-decoration: none;
+}
+
+header a:hover {
+  text-decoration: underline;
+}
+
+h1 {
+  color: #333;
+  text-align: center;
+  margin-top: 20px;
+}
+
+.container {
+  width: 70%;
+  margin: 0 auto;
+  padding: 20px;
+  background-color: white;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  align-content: center;
+  text-align: center;
+  justify-content: center;
+}
+
+.posts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  align-content: center;
+  text-align: center;
+  justify-content: center;
+}
+
+.post {
+  background-color: #fff;
+  border: 1px solid #ddd;
   border-radius: 5px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  width: 20%;
+  align-content: center;
+  text-align: center;
+  justify-content: center;
 }
-.list-box {
-  padding : 10px;
-  border-bottom: 1px solid#eee;
+
+.post-image img {
+  width: 100%;
+  height: 150px;
+  align-content: center;
+  text-align: center;
+  justify-content: center;
+  object-fit:contain;
+  padding: 10px;
 }
-.list-box h4{
+
+.post-content {
+  padding: 15px;
+}
+
+.post-content h2 {
+  margin: 0;
+  font-size: 18px;
+  color: #333;
+}
+
+.post-content p {
+  margin: 10px 0 0;
+  color: #666;
+}
+
+@media (max-width: 768px) {
+  .post {
+    width: 100%;
+  }
+}
+
+a {
+  text-decoration: none; /* 링크 밑줄 제거 */
+  color: inherit; /* 링크 색상 초기화 */
+  display: inline; /* 인라인 요소 유지 */
+}
+
+.sort-buttons {
+  display: flex;
+  margin-bottom: 20px;
+  align-content: center;
+  text-align: center;
+  justify-content: center;
+}
+
+.sort-button {
+  padding: 10px 20px;
   font-size: 16px;
-  margin: 5px;
+  border: 1px solid #ccc;
+  background-color: #f9f9f9;
+  cursor: pointer;
+  transition: background-color 0.3s, color 0.3s;
+  border-radius: 0;
 }
-.list-box p {
-  font-size: 13px;
-  margin: 5px;
-  color: grey;
+
+.sort-button:first-child {
+  border-top-left-radius: 5px;
+  border-bottom-left-radius: 5px;
+}
+
+.sort-button:last-child {
+  border-top-right-radius: 5px;
+  border-bottom-right-radius: 5px;
+}
+
+.sort-button.active {
+  background-color: gray;
+  color: white;
+  border-color: gray;
+}
+
+.sort-button:hover {
+  background-color: gray;
+  color: white;
+}
+
+.sort-button:not(:first-child) {
+  border-left: none;
 }
