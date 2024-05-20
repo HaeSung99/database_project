@@ -1,0 +1,10 @@
+<header>
+    <% if (user.MemberNumber) { %>
+      <p><%= user.Nickname %> 님 환영합니다!</p>
+      <a href="/logout">로그아웃</a>
+      <a href="/write">글쓰기</a>
+    <% } else { %>
+      <a href="/login">로그인</a>
+      <a href="/sign">회원가입</a>
+    <% } %>
+  </header>

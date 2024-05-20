@@ -2,19 +2,12 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>게시글</title>
+    <title><%= post.title %></title>
 </head>
 <body>
-    <h1>게시글</h1>
-    <form action="/sign" method="POST">
-        <label for="username">아이디:</label>
-        <input type="text" id="userId" name="userId"><br><br>
-        <label for="password">비밀번호:</label>
-        <input type="password" id="userPassword" name="userPassword"><br><br>
-        <label for="nickname">닉네임:</label>
-        <input type="text" id="nickname" name="nickname"><br><br>
-        <button type="submit">가입하기</button>
-    </form>
+    <p><%= console.log(post) %></p>
+    <h1><%= post.Title %></h1>
+    <p><%= post.Content %></p>
+    <a href="/">뒤로가기</a>
 </body>
 </html>

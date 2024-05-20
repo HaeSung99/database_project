@@ -51,13 +51,21 @@ app.use(session({
 
 app.get('/', (req, res) => {
   const user = req.session.user || {};
-  const getPosts = 'SELECT * FROM post';
+  const sort = req.query.sort || 'latest';
+  let getPosts = '';
+
+  if (sort === 'views') {
+    getPosts = 'SELECT * FROM post ORDER BY Views DESC'; // 조회수 순 정렬
+  } else {
+    getPosts = 'SELECT * FROM post ORDER BY PostNumber DESC'; // 최신순 정렬
+  }
+
   db.query(getPosts, (err, results) => {
     if (err) {
       console.error('게시글 가져오기 실패: ' + err.stack);
       return;
     }
-    res.render('main.ejs', { user: user, post: results });
+    res.render('main.ejs', { user: user, post: results, sort: sort });
   });
 });
 
@@ -166,6 +174,26 @@ app.post('/write', upload.single('image'), (req, res) => {
     }
     res.redirect('/');
   });
+});
+
+//각 게시글 별로 상세페이지로 이동
+app.get('/post/:id', (req, res) => {
+  const PostNumber = req.params.id;
+  const query = 'SELECT * FROM post WHERE PostNumber = ?';
+  db.query(query, [PostNumber], (err, results) => {
+      if (err) throw err;
+      res.render('post', { post: results[0] });
+  });
+  // 조회수를 증가시키는 SQL 쿼리
+  const updateViewsQuery = `UPDATE post SET views = views + 1 WHERE PostNumber = ?`;
+
+  db.query(updateViewsQuery, [PostNumber], (err, results) => {
+    if (err) {
+      console.error('Failed to update views:', err);
+      res.status(500).send('Server error');
+      return;
+    }
+})
 });
 
 // 서버 실행

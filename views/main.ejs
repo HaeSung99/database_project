@@ -1,31 +1,48 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MySQL 데이터 출력</title>
-    <link href="/main.css" rel="stylesheet">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>메인 페이지</title>
+  <link rel="stylesheet" href="/main.css">
 </head>
 <body>
-    <h1>사용자 데이터 출력</h1>
-    <body class="grey-bg">
-        <div class="white-bg">
-            <% if (!user || !user.MemberNumber || !user.Nickname) { %>
-                <!-- 로그인되어 있지 않은 경우 -->
-                <a href="/login">로그인</a>
-            <% } else { %>
-                <!-- 로그인되어 있는 경우 -->
-                <form action="/logout" method="GET">
-                    <button type="submit">로그아웃</button>
-                </form>
-                <div class="list-box">
-                    <h4>회원번호</h4>
-                    <p><%= user.MemberNumber %></p>
-                    <h4>닉네임</h4>
-                    <p><%= user.Nickname %></p>
-                </div>
-            <% } %>
-        </div> 
-    </body>
+  <%- include ('partials/nav') %> <!-- 공통 네비게이션 바 포함 -->
+
+  <h1>게시글 목록</h1>
+  
+  <!-- 정렬 버튼들 -->
+  <div class="sort-buttons">
+    <a href="/?sort=latest" class="sort-button <%= sort === 'latest' ? 'active' : '' %>">최신순</a>
+    <a href="/?sort=views" class="sort-button <%= sort === 'views' ? 'active' : '' %>">조회수순</a>
+  </div>
+  
+  <div class="container" id="posts-container">
+    <% if (post.length > 0) { %>
+      <div class="posts">
+        <% post.forEach(function(p) { %>
+          <div class="post">
+            <a href="/post/<%= p.PostNumber %>">
+              <div class="post-image">
+                <% if (p.ImagePath) { %>
+                  <img src="<%= p.ImagePath %>" alt="게시글 이미지">
+                <% } else { %>
+                  <img src="/public/기본이미지.png" alt="기본 이미지">
+                <% } %>
+              </div>
+            </a>
+            <div class="post-content">
+              <h2><%= p.Title %></h2>
+              <p>작성자: <%= p.AuthorNickname %></p>
+              <p><%= p.Content %></p>
+              <p>조회수: <%= p.Views %> &nbsp;&nbsp; 댓글수: <%= p.RecommendCounts %></p>
+            </div>
+          </div>
+        <% }); %>
+      </div>
+    <% } else { %>
+      <p>게시글이 없습니다.</p>
+    <% } %>
+  </div>
 </body>
 </html>
