@@ -4,22 +4,26 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>로그인</title>
+    <link rel="stylesheet" href="/main.css">
 </head>
 <body>
+
+    <%- include ('partials/nav') %> <!-- 공통 네비게이션 바 포함 -->
 
     <% if (message) { %>
         <script>
             alert('<%= message %>');
         </script>
     <% } %>
-
+    
     <h1>로그인</h1>
     <form action="/login" method="POST">
-        <label for="username">ID:</label>
+        <label for="userId">ID:</label>
         <input type="text" id="userId" name="userId"><br><br>
-        <label for="password">PW:</label>
+        <label for="userPassword">PW:</label>
         <input type="password" id="userPassword" name="userPassword"><br><br>
         <button type="submit">로그인</button>
     </form>
+    
 </body>
 </html>

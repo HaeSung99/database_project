@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>메인 페이지</title>
+  <link rel="stylesheet" href="/main.css">
+</head>
+<body>
+  <%- include ('partials/nav') %> <!-- 공통 네비게이션 바 포함 -->
+
+  <h1>게시글 목록</h1>
+  
+  <!-- 정렬 버튼들 -->
+  <div class="sort-buttons">
+    <a href="/categories/?sort=latest" class="sort-button <%= sort === 'latest' ? 'active' : '' %>">최신순</a>
+    <a href="/categories/?sort=views" class="sort-button <%= sort === 'views' ? 'active' : '' %>">조회수순</a>
+  </div>
+  
+  <div class="container" id="posts-container">
+    <% if (post.length > 0) { %>
+      <div class="posts">
+        <% post.forEach(function(p) { %>
+          <div class="post">
+            <a href="/post/<%= p.PostNumber %>">
+              <div class="post-image">
+                <% if (p.ImagePath) { %>
+                  <img src="<%= p.ImagePath %>" alt="게시글 이미지">
+                <% } else { %>
+                  <img src="/public/기본이미지.png" alt="기본 이미지">
+                <% } %>
+              </div>
+            </a>
+            <div class="post-content">
+              <h2><%= p.Title %></h2>
+              <p>작성자: <%= p.AuthorNickname %></p>
+              <p><%= p.Content %></p>
+              <p>조회수: <%= p.Views %> &nbsp;&nbsp; 댓글수: <%= p.RecommendCounts %></p>
+            </div>
+          </div>
+        <% }); %>
+      </div>
+    <% } else { %>
+      <p>게시글이 없습니다.</p>
+    <% } %>
+  </div>
+</body>
+</html>

@@ -48,8 +48,9 @@ app.use(session({
     maxAge: 1200000 // 세션 쿠키의 유효기간을 밀리초 단위로 설정 (20분으로 설정)
   }
 }));
-
-app.get('/', (req, res) => {
+//분류 페이지
+app.get('/categories', (req, res) => {
+  console.log(req.session.user);
   const user = req.session.user || {};
   const sort = req.query.sort || 'latest';
   let getPosts = '';
@@ -65,13 +66,20 @@ app.get('/', (req, res) => {
       console.error('게시글 가져오기 실패: ' + err.stack);
       return;
     }
-    res.render('main.ejs', { user: user, post: results, sort: sort });
+    res.render('categories.ejs', { user: user, post: results, sort: sort });
   });
 });
 
+//메인페이지
+app.get('/', (req, res) => {
+  const user = req.session.user || {};
+    res.render('main.ejs', { user: user });
+  });
+
 app.get('/sign', (req, res) => {
+  const user = req.session.user || {};
   req.session.message = null;
-  res.render('sign.ejs', { message: null });
+  res.render('sign.ejs', { message: null , user:user });
 });
 
 app.get('/write', (req, res, next) => {
@@ -84,8 +92,9 @@ app.get('/write', (req, res, next) => {
 });
 
 app.get('/login', (req, res) => {
+  const user = req.session.user || {};
   req.session.message = null;
-  res.render('login.ejs', { message: null });
+  res.render('login.ejs', { message: null, user: user});
 });
 
 // 로그인 기능
@@ -103,7 +112,7 @@ app.post('/login', (req, res) => {
       req.session.user = user;
       res.redirect('/');
     } else {
-      res.render('login', { message: '아이디 또는 비밀번호가 잘못되었습니다.' });
+      res.render('login.ejs', { message: '아이디 또는 비밀번호가 잘못되었습니다.' });
     }
   });
 });
@@ -164,10 +173,10 @@ app.post('/sign', (req, res) => {
 
 // 글쓰기 정보 받는 곳
 app.post('/write', upload.single('image'), (req, res) => {
-  const { title, content, nickname, userId, timestamp } = req.body;
+  const { title, intro, method, category, people, time, difficulty, nickname, userId, timestamp } = req.body;
   const imagePath = req.file ? `/uploads/${req.file.filename}` : null;
-  const writePostQuery = 'INSERT INTO Post (AuthorMemberNumber, AuthorNickname, Title, WritingTime, Content, ImagePath) VALUES (?, ?, ?, ?, ?, ?)';
-  db.query(writePostQuery, [userId, nickname, title, timestamp, content, imagePath], (err, results) => {
+  const writePostQuery = 'INSERT INTO Post (AuthorMemberNumber, AuthorNickname, title,  WritingTime, intro, method, category, people, time, difficulty, ImagePath) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+  db.query(writePostQuery, [userId, nickname, title, timestamp, intro, method, category, people, time, difficulty, imagePath], (err, results) => {
     if (err) {
       console.error('게시글 작성 실패: ' + err.stack);
       return;
@@ -178,12 +187,15 @@ app.post('/write', upload.single('image'), (req, res) => {
 
 //각 게시글 별로 상세페이지로 이동
 app.get('/post/:id', (req, res) => {
+  console.log(req.session.user);
   const PostNumber = req.params.id;
   const query = 'SELECT * FROM post WHERE PostNumber = ?';
   db.query(query, [PostNumber], (err, results) => {
       if (err) throw err;
-      res.render('post', { post: results[0] });
+      res.render('post', { post: results[0] , user: req.session.user});
   });
+
+
   // 조회수를 증가시키는 SQL 쿼리
   const updateViewsQuery = `UPDATE post SET views = views + 1 WHERE PostNumber = ?`;
 
@@ -195,6 +207,7 @@ app.get('/post/:id', (req, res) => {
     }
 })
 });
+
 
 // 서버 실행
 app.listen(8080, () => {
