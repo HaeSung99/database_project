@@ -2,12 +2,17 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title><%= post.title %></title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><% post.title %></title>
+  <link rel="stylesheet" href="/main.css">
 </head>
 <body>
+    
+    <%- include ('partials/nav') %> <!-- 공통 네비게이션 바 포함 -->
+
     <p><%= console.log(post) %></p>
     <h1><%= post.Title %></h1>
     <p><%= post.Content %></p>
-    <a href="/">뒤로가기</a>
+    <a href="/categories">뒤로가기</a>
 </body>
 </html>
