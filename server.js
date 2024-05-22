@@ -56,10 +56,11 @@ app.get('/categories', (req, res) => {
   const sort = req.query.sort || 'latest';
   let getPosts = '';
 
+  //게시글 가져오는부분 (getPosts = 'SELECT * FROM post WHERE postdeleteflag = "N"';) = 게시글 삭제 플래그가 N인 게시글만 가져오기
   if (sort === 'views') {
-    getPosts = 'SELECT * FROM post ORDER BY Views DESC'; // 조회수 순 정렬
+    getPosts = 'SELECT * FROM post WHERE postdeleteflag = "N" ORDER BY Views DESC';
   } else {
-    getPosts = 'SELECT * FROM post ORDER BY PostNumber DESC'; // 최신순 정렬
+    getPosts = 'SELECT * FROM post WHERE postdeleteflag = "N" ORDER BY PostNumber DESC';
   }
 
   db.query(getPosts, (err, results) => {
@@ -187,15 +188,19 @@ app.post('/write', upload.single('image'), (req, res) => {
   });
 });
 
+//게시글 내용 보여주는 곳
 app.get('/post/:id', (req, res) => {
   const user = req.session.user || {};
-  console.log(user.MemberNumber);
+  console.log(user['MemberNumber']);
   console.log(req.params.id);
   const PostNumber = req.params.id;
 
-  const query = 'SELECT * FROM post WHERE PostNumber = ?';
+  const query = 'SELECT * FROM post WHERE PostNumber = ? AND postdeleteflag = "N"';
   db.query(query, [PostNumber], (err, result) => {
-    if (err) throw err;
+    if (err) {
+      console.error('게시글 조회 실패: ' + err.stack);
+      return;
+    }
     if (result.length > 0) {
       const post = result[0];
       // MySQL 타임스탬프 컬럼이 실제로 'TIMESTAMP'인지 확인
@@ -205,7 +210,7 @@ app.get('/post/:id', (req, res) => {
       const updateViewsQuery = `UPDATE post SET views = views + 1 WHERE PostNumber = ?`;
       db.query(updateViewsQuery, [PostNumber], (err, updateResult) => {
         if (err) {
-          console.error('Failed to update views:', err);
+          console.error('조회수 업데이트 실패: ' + err);
           res.status(500).send('Server error');
           return;
         }
@@ -214,6 +219,60 @@ app.get('/post/:id', (req, res) => {
     } else {
       res.send('Post not found');
     }
+  });
+});
+
+//수정 페이지에 원본 게시글 내용 불러오기
+app.get('/edit/:id', (req, res) => {
+  const user = req.session.user || {};
+  const PostNumber = req.params.id;
+  const query = 'SELECT * FROM post WHERE PostNumber = ? AND postdeleteflag = "N"'; 
+  db.query(query, [PostNumber], (err, result) => {
+    if (err) throw err;
+    if (result.length > 0) {
+      const post = result[0];
+      res.render('edit', { post: post, user: user });
+    } else {
+      res.send('Post not found');
+    }
+  });
+});
+
+//수정한 내용을 데이터베이스에 저장
+app.post('/edit/:id', upload.single('image'), (req, res) => {
+  const { title, intro, method, category, people, time, difficulty, nickname, userId, timestamp, PostNumber } = req.body;
+  const imagePath = req.file ? `/uploads/${req.file.filename}` : null;
+
+  let updatePostQuery;
+  let queryParams;
+
+  if (imagePath) {
+    updatePostQuery = 'UPDATE post SET title = ?, intro = ?, method = ?, category = ?, people = ?, time = ?, difficulty = ?, ImagePath = ? WHERE PostNumber = ?';
+    queryParams = [title, intro, method, category, people, time, difficulty, imagePath, PostNumber];
+  } else {
+    updatePostQuery = 'UPDATE post SET title = ?, intro = ?, method = ?, category = ?, people = ?, time = ?, difficulty = ? WHERE PostNumber = ?';
+    queryParams = [title, intro, method, category, people, time, difficulty, PostNumber];
+  }
+
+  db.query(updatePostQuery, queryParams, (err, results) => {
+    if (err) {
+      console.error('게시글 수정 실패: ' + err.stack);
+      return;
+    }
+    res.redirect('/categories');
+  });
+});
+
+//삭제 기능
+app.post('/delete', (req, res) => {
+  const PostNumber = req.body['PostNumber'];
+  const query = 'UPDATE post SET postdeleteflag = "Y" WHERE PostNumber = ?';
+  db.query(query, [PostNumber], (err, result) => {
+    if (err) {
+      console.error('게시글 삭제 실패: ' + err.stack);
+      return;
+    }
+    res.redirect('/categories');
   });
 });
 

@@ -7,10 +7,13 @@
   <link rel="stylesheet" href="/main.css">
 </head>
 <body>
-    <%- include ('partials/nav') %> <!-- 공통 네비게이션 바 포함 -->
+  <%- include('partials/nav') %> <!-- 공통 네비게이션 바 포함 -->
 
-  <h1><%= post.title %></h1>
   <div class="post-container">
+    <div class="post-group">
+      <label>제목</label>
+      <p><%= post.Title %></p>
+    </div>
     <div class="post-row">
       <div class="post-group half-width">
         <label>작성자</label>
@@ -47,6 +50,19 @@
         <p>난이도 : <%= post.difficulty %></p>
       </div>
     </div>
+    <div class="post-group">
+      <label>조회수</label>
+      <p><%= post.Views %></p>
+    <!-- 수정, 삭제 버튼 -->
+    <!-- 만약 작성자가 로그인한 사용자라면 수정, 삭제 버튼을 보여줍니다. -->
+    <% if (post.AuthorMemberNumber === user['MemberNumber'] ) { %>
+      <div class="button-group">
+        <button id="editButton" onclick="location.href='/edit/<%= post.PostNumber %>'">수정</button> <!-- post.id를 post.PostNumber로 수정 -->
+        <form action="/delete" method="post" style="display: inline;">
+          <button id="deleteButton" type="submit"><input type="hidden" id="PostNumber" name="PostNumber" value="<%= post.PostNumber %>">삭제</button>
+        </form>
+      </div>
+    <% } %>
   </div>
 </body>
 </html>

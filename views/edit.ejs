@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>글쓰기</title>
+  <link rel="stylesheet" href="/write.css">
+</head>
+<body>
+  <%- include('partials/nav') %> <!-- 공통 네비게이션 바 포함 -->
+  <% console.log(post) %>
+
+  <h1>글쓰기</h1>
+  <form id="editForm" action="/edit/:post.PostNumber" method="post" enctype="multipart/form-data">
+    <div class="form-container">
+      <div class="form-row">
+        <div class="form-group half-width">
+          <label for="title">제목</label>
+          <input type="text" id="title" name="title" value="<%= post.Title %>" required>
+        </div>
+        <div class="form-group half-width image-upload">
+          <label for="image">요리 대표 사진</label>
+          <div class="image-preview-container" id="imagePreviewContainer">
+            <input type="file" id="image" name="image" accept="image/*" style="display:none;">
+            <% if (post.ImagePath) { %>
+              <img id="imagePreview" src="<%= post.ImagePath %>" alt="이미지 미리보기">
+              <img id="imagePlaceholder" src="/path/to/placeholder.jpg" alt="이미지 업로드" style="display:none;">
+            <% } else { %>
+              <img id="imagePlaceholder" src="/path/to/placeholder.jpg" alt="이미지 업로드">
+              <img id="imagePreview" src="" alt="이미지 미리보기" style="display:none;">
+            <% } %>
+          </div>
+          <button type="button" id="cancelImage" class="cancel-button" style="display:none;">취소</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="intro">요리 소개</label>
+        <textarea id="intro" name="intro" required><%= post.intro %></textarea>
+      </div>
+      <div class="form-group method">
+        <label for="method">요리 방법</label>
+        <textarea id="method" name="method" required><%= post.method %></textarea>
+      </div>
+      <div class="form-group">
+        <label for="category">카테고리</label>
+        <select id="category" name="category">
+          <option value="한식" <%= post.category === '한식' ? 'selected' : '' %>>한식</option>
+          <option value="양식" <%= post.category === '양식' ? 'selected' : '' %>>양식</option>
+          <option value="일식" <%= post.category === '일식' ? 'selected' : '' %>>일식</option>
+          <option value="중식" <%= post.category === '중식' ? 'selected' : '' %>>중식</option>
+          <option value="기타" <%= post.category === '기타' ? 'selected' : '' %>>기타</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="people">요리정보</label>
+        <div class="info-group">
+          <select id="people" name="people">
+            <option value="인원" <%= post.people === '인원' ? 'selected' : '' %>>식사 인원</option>
+            <option value="1인" <%= post.people === '1인' ? 'selected' : '' %>>1인</option>
+            <option value="2인" <%= post.people === '2인' ? 'selected' : '' %>>2인</option>
+            <option value="3인" <%= post.people === '3인' ? 'selected' : '' %>>3인</option>
+            <option value="4인" <%= post.people === '4인' ? 'selected' : '' %>>4인</option>
+          </select>
+          <select id="time" name="time">
+            <option value="시간" <%= post.time === '시간' ? 'selected' : '' %>>시간</option>
+            <option value="10분 이내" <%= post.time === '10분 이내' ? 'selected' : '' %>>10분 이내</option>
+            <option value="20분 이내" <%= post.time === '20분 이내' ? 'selected' : '' %>>20분 이내</option>
+            <option value="30분 이내" <%= post.time === '30분 이내' ? 'selected' : '' %>>30분 이내</option>
+          </select>
+          <select id="difficulty" name="difficulty">
+            <option value="난이도" <%= post.difficulty === '난이도' ? 'selected' : '' %>>난이도</option>
+            <option value="초급" <%= post.difficulty === '초급' ? 'selected' : '' %>>초급</option>
+            <option value="중급" <%= post.difficulty === '중급' ? 'selected' : '' %>>중급</option>
+            <option value="고급" <%= post.difficulty === '고급' ? 'selected' : '' %>>고급</option>
+          </select>
+        </div>
+      </div>
+      <input type="hidden" id="userId" name="userId" value="<%= user.MemberNumber %>">
+      <input type="hidden" id="nickname" name="nickname" value="<%= user.Nickname %>">
+      <input type="hidden" id="timestamp" name="timestamp">
+      <input type="hidden" id="PostNumber" name="PostNumber" value="<%= post.PostNumber %>">
+
+      <button type="submit">수정</button>
+    </div>
+  </form>
+
+  <script>
+    // 작성 시간을 MySQL DATETIME 형식에 맞게 설정
+    function formatDateToMysqlDatetime(date) {
+      return date.getFullYear() + '-' +
+        ('0' + (date.getMonth() + 1)).slice(-2) + '-' +
+        ('0' + date.getDate()).slice(-2) + ' ' +
+        ('0' + date.getHours()).slice(-2) + ':' +
+        ('0' + date.getMinutes()).slice(-2) + ':' +
+        ('0' + date.getSeconds()).slice(-2);
+    }
+
+    document.getElementById('timestamp').value = formatDateToMysqlDatetime(new Date());
+
+    // 이미지 미리보기 설정
+    document.getElementById('imagePlaceholder').addEventListener('click', function() {
+      document.getElementById('image').click();
+    });
+
+    document.getElementById('image').addEventListener('change', function(event) {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const img = document.getElementById('imagePreview');
+          const placeholder = document.getElementById('imagePlaceholder');
+          const cancelBtn = document.getElementById('cancelImage');
+          img.src = e.target.result;
+          img.style.display = 'block';
+          placeholder.style.display = 'none';
+          cancelBtn.style.display = 'block';
+        }
+        reader.readAsDataURL(file);
+      }
+    });
+
+    // 이미지 업로드 취소
+    document.getElementById('cancelImage').addEventListener('click', function() {
+      const img = document.getElementById('imagePreview');
+      const placeholder = document.getElementById('imagePlaceholder');
+      const input = document.getElementById('image');
+      const cancelBtn = document.getElementById('cancelImage');
+      img.src = '';
+      img.style.display = 'none';
+      placeholder.style.display = 'block';
+      input.value = '';
+      cancelBtn.style.display = 'none';
+    });
+
+    // 입력 필드 검증
+    document.getElementById('editForm').addEventListener('submit', function(event) {
+      const title = document.getElementById('title').value.trim();
+      const intro = document.getElementById('intro').value.trim();
+      const method = document.getElementById('method').value.trim();
+      const people = document.getElementById('people').value;
+      const time = document.getElementById('time').value;
+      const difficulty = document.getElementById('difficulty').value;
+
+      if (!title || !intro || !method || (document.getElementById('image').files.length === 0 && document.getElementById('imagePreview').style.display === 'none') || 
+          people === '인원' || time === '시간' || difficulty === '난이도') {
+        event.preventDefault();
+        alert('모든 빈칸을 채워주세요.');
+      }
+    });
+
+    // 페이지 로드 시 이미지 취소 버튼 설정
+    window.addEventListener('load', function() {
+      const img = document.getElementById('imagePreview');
+      const cancelBtn = document.getElementById('cancelImage');
+      if (img.src && img.style.display !== 'none') {
+        cancelBtn.style.display = 'block';
+      }
+    });
+  </script>
+
+</body>
+</html>
