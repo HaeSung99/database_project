@@ -4,6 +4,7 @@ const mysql = require('mysql2');
 const session = require('express-session');
 const multer = require('multer');
 const path = require('path');
+const moment = require('moment');
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -48,9 +49,9 @@ app.use(session({
     maxAge: 1200000 // 세션 쿠키의 유효기간을 밀리초 단위로 설정 (20분으로 설정)
   }
 }));
+
 //분류 페이지
 app.get('/categories', (req, res) => {
-  console.log(req.session.user);
   const user = req.session.user || {};
   const sort = req.query.sort || 'latest';
   let getPosts = '';
@@ -73,13 +74,14 @@ app.get('/categories', (req, res) => {
 //메인페이지
 app.get('/', (req, res) => {
   const user = req.session.user || {};
-    res.render('main.ejs', { user: user });
-  });
+  req.session.message = null;
+  res.render('main.ejs', { user: user, message: null });
+});
 
 app.get('/sign', (req, res) => {
   const user = req.session.user || {};
   req.session.message = null;
-  res.render('sign.ejs', { message: null , user:user });
+  res.render('sign.ejs', { message: null, user: user });
 });
 
 app.get('/write', (req, res, next) => {
@@ -91,10 +93,11 @@ app.get('/write', (req, res, next) => {
   res.render('write.ejs', { user: req.session.user });
 });
 
+// 로그인 페이지
 app.get('/login', (req, res) => {
   const user = req.session.user || {};
   req.session.message = null;
-  res.render('login.ejs', { message: null, user: user});
+  res.render('login.ejs', { message: null, user: user });
 });
 
 // 로그인 기능
@@ -104,15 +107,14 @@ app.post('/login', (req, res) => {
   db.query(loginQuery, [userId, userPassword], (err, results) => {
     if (err) {
       console.error('로그인 실패: ' + err.stack);
-      return;
+      return res.render('login', { message: '로그인 중 오류가 발생했습니다.', user: null });
     }
     const user = results[0];
     if (user) {
-      console.log(user);
       req.session.user = user;
       res.redirect('/');
     } else {
-      res.render('login.ejs', { message: '아이디 또는 비밀번호가 잘못되었습니다.' });
+      res.render('login', { message: '아이디 또는 비밀번호가 일치하지 않습니다.', user: null });
     }
   });
 });
@@ -134,7 +136,7 @@ app.post('/sign', (req, res) => {
 
   // 입력값 검증
   if (!userId || !userPassword || !userNickname) {
-    return res.render('sign', { message: '모든 빈칸을 채워주세요.' });
+    return res.render('sign', { message: '모든 빈칸을 채워주세요.', user: null });
   }
 
   const checkIdQuery = 'SELECT * FROM Member WHERE MemberID = ?';
@@ -145,9 +147,9 @@ app.post('/sign', (req, res) => {
     }
 
     if (results.length > 0) {
-      return res.render('sign', { message: '이미 존재하는 아이디입니다.' });
+      return res.render('sign', { message: '이미 존재하는 아이디입니다.', user: null });
     } else {
-      const checkNicknameQuery = 'SELECT * FROM Member WHERE MemberID = ?';
+      const checkNicknameQuery = 'SELECT * FROM Member WHERE Nickname = ?';
       db.query(checkNicknameQuery, [userNickname], (err, results) => {
         if (err) {
           console.error('닉네임 확인 실패: ' + err.stack);
@@ -155,7 +157,7 @@ app.post('/sign', (req, res) => {
         }
 
         if (results.length > 0) {
-          return res.render('sign', { message: '이미 존재하는 닉네임입니다.' });
+          return res.render('sign', { message: '이미 존재하는 닉네임입니다.', user: null });
         } else {
           const signUpQuery = 'INSERT INTO Member (MemberID, MemberPassword, Nickname) VALUES (?, ?, ?)';
           db.query(signUpQuery, [userId, userPassword, userNickname], (err, results) => {
@@ -175,7 +177,7 @@ app.post('/sign', (req, res) => {
 app.post('/write', upload.single('image'), (req, res) => {
   const { title, intro, method, category, people, time, difficulty, nickname, userId, timestamp } = req.body;
   const imagePath = req.file ? `/uploads/${req.file.filename}` : null;
-  const writePostQuery = 'INSERT INTO Post (AuthorMemberNumber, AuthorNickname, title,  WritingTime, intro, method, category, people, time, difficulty, ImagePath) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+  const writePostQuery = 'INSERT INTO Post (AuthorMemberNumber, AuthorNickname, title, timestamp, intro, method, category, people, time, difficulty, ImagePath) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
   db.query(writePostQuery, [userId, nickname, title, timestamp, intro, method, category, people, time, difficulty, imagePath], (err, results) => {
     if (err) {
       console.error('게시글 작성 실패: ' + err.stack);
@@ -185,29 +187,35 @@ app.post('/write', upload.single('image'), (req, res) => {
   });
 });
 
-//각 게시글 별로 상세페이지로 이동
 app.get('/post/:id', (req, res) => {
-  console.log(req.session.user);
+  const user = req.session.user || {};
+  console.log(user.MemberNumber);
+  console.log(req.params.id);
   const PostNumber = req.params.id;
+
   const query = 'SELECT * FROM post WHERE PostNumber = ?';
-  db.query(query, [PostNumber], (err, results) => {
-      if (err) throw err;
-      res.render('post', { post: results[0] , user: req.session.user});
-  });
+  db.query(query, [PostNumber], (err, result) => {
+    if (err) throw err;
+    if (result.length > 0) {
+      const post = result[0];
+      // MySQL 타임스탬프 컬럼이 실제로 'TIMESTAMP'인지 확인
+      post.formattedTimestamp = moment(post.TIMESTAMP).format('YYYY-MM-DD HH:mm:ss');
 
-
-  // 조회수를 증가시키는 SQL 쿼리
-  const updateViewsQuery = `UPDATE post SET views = views + 1 WHERE PostNumber = ?`;
-
-  db.query(updateViewsQuery, [PostNumber], (err, results) => {
-    if (err) {
-      console.error('Failed to update views:', err);
-      res.status(500).send('Server error');
-      return;
+      // 조회수를 증가시키는 SQL 쿼리
+      const updateViewsQuery = `UPDATE post SET views = views + 1 WHERE PostNumber = ?`;
+      db.query(updateViewsQuery, [PostNumber], (err, updateResult) => {
+        if (err) {
+          console.error('Failed to update views:', err);
+          res.status(500).send('Server error');
+          return;
+        }
+        res.render('post', { post: post, user: user });
+      });
+    } else {
+      res.send('Post not found');
     }
-})
+  });
 });
-
 
 // 서버 실행
 app.listen(8080, () => {

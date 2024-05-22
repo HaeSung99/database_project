@@ -1,20 +1,21 @@
-
-    <nav class="navbar">
-        <div class="nav-left">
-            <a href="/" class="nav-logo">레시피 도서관</a>
-        </div>
-        <div class="nav-center">
-            <a href="/categories" class="nav-item">분류</a>
-            <a href="/ranking" class="nav-item">랭킹</a>
-            <a href="/community" class="nav-item">커뮤니티</a>
-        </div>
-        <div class="nav-right">
-            <% if (user.MemberNumber) { %>
-                <a href="/logout" class="nav-item" id="logoutBtn">로그아웃</a>
-                <a href="/write" class="nav-item">글쓰기</a>
-            <% } else { %>
-                <a href="/login" class="nav-item" id="loginBtn">로그인</a>
-                <a href="/sign" class="nav-item">회원가입</a>
-            <% } %>
-        </div>
-    </nav>
+<!-- nav.ejs -->
+<nav class="navbar">
+    <div class="nav-left">
+        <a href="/" class="nav-logo">레시피 도서관</a>
+    </div>
+    <div class="nav-center">
+        <a href="/categories" class="nav-item">분류</a>
+        <a href="/ranking" class="nav-item">랭킹</a>
+        <a href="/community" class="nav-item">커뮤니티</a>
+    </div>
+    <div class="nav-right">
+        <% if (user && user.MemberNumber) { %>
+            <span class="hello"><%- user.Nickname %>님 안녕하세요!</span>
+            <a href="/logout" class="nav-item" id="logoutBtn">로그아웃</a>
+            <a href="/write" class="nav-item">글쓰기</a>
+        <% } else { %>
+            <a href="/login" class="nav-item" id="loginBtn">로그인</a>
+            <a href="/sign" class="nav-item">회원가입</a>
+        <% } %>
+    </div>
+</nav>

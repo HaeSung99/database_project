@@ -1,18 +1,52 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
 <head>
-    <meta charset="UTF-8">
+  <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title><% post.title %></title>
+  <title><%= post.title %></title>
   <link rel="stylesheet" href="/main.css">
 </head>
 <body>
-    
     <%- include ('partials/nav') %> <!-- 공통 네비게이션 바 포함 -->
 
-    <p><%= console.log(post) %></p>
-    <h1><%= post.Title %></h1>
-    <p><%= post.Content %></p>
-    <a href="/categories">뒤로가기</a>
+  <h1><%= post.title %></h1>
+  <div class="post-container">
+    <div class="post-row">
+      <div class="post-group half-width">
+        <label>작성자</label>
+        <p><%= post.AuthorNickname %></p>
+      </div>
+      <div class="post-group half-width">
+        <label>작성일</label>
+        <p><%= post.formattedTimestamp %></p> <!-- 서버 측에서 포맷된 타임스탬프 -->
+      </div>
+    </div>
+    <div class="post-group">
+      <label>요리 대표 사진</label>
+      <div class="image-preview-container">
+        <img id="image" src="<%= post.ImagePath %>" alt="요리 대표 사진">
+      </div>
+    </div>
+    <div class="post-group">
+      <label>요리 소개</label>
+      <p><%= post.intro %></p>
+    </div>
+    <div class="post-group method">
+      <label>요리 방법</label>
+      <p style="white-space: pre-wrap;"><%= post.method %></p>
+    </div>
+    <div class="post-group">
+      <label>카테고리</label>
+      <p><%= post.category %></p>
+    </div>
+    <div class="post-group">
+      <label>요리정보</label>
+      <div class="info-group">
+        <p>식사 인원 : <%= post.people %></p>
+        <p>시간 : <%= post.time %></p>
+        <p>난이도 : <%= post.difficulty %></p>
+      </div>
+    </div>
+  </div>
 </body>
 </html>

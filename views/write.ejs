@@ -15,7 +15,7 @@
       <div class="form-row">
         <div class="form-group half-width">
           <label for="title">레시피 제목</label>
-          <input type="text" id="title" name="title" required>
+          <input type="text" id="title" name="title" placeholder="둘이 먹어도 배부른 비빔밥" required>
         </div>
         <div class="form-group half-width image-upload">
           <label for="image">요리 대표 사진</label>
@@ -29,11 +29,11 @@
       </div>
       <div class="form-group">
         <label for="intro">요리 소개</label>
-        <textarea id="intro" name="intro" required></textarea>
+        <textarea id="intro" name="intro" placeholder="예 : 이 요리는 간단하게 만들 수 있는 한식입니다."></textarea>
       </div>
       <div class="form-group method">
         <label for="method">요리 방법</label>
-        <textarea id="method" name="method" required></textarea>
+        <textarea id="method" name="method" placeholder="" required></textarea>
       </div>
       <div class="form-group">
         <label for="category">카테고리</label>
@@ -143,6 +143,10 @@
         alert('모든 빈칸을 채워주세요.');
       }
     });
+
+    // 줄바꿈이 포함된 placeholder 설정
+    document.getElementById('method').placeholder = "예: \n1. 재료 손질하기\n2. 팬에 기름 두르고 볶기\n3. 양념 넣고 조리하기";
+  
   </script>
 
 </body>

@@ -67,7 +67,7 @@ h1 {
   align-content: center;
   text-align: center;
   justify-content: center;
-  object-fit:contain;
+  object-fit: contain;
   padding: 10px;
 }
 
@@ -84,6 +84,10 @@ h1 {
 .post-content p {
   margin: 10px 0 0;
   color: #666;
+}
+
+.hello {
+  color: white;
 }
 
 @media (max-width: 768px) {
@@ -176,41 +180,77 @@ body {
   text-decoration: underline;
 }
 
-/* 로그인모달에 대한 내용 */
-
-.modal {
-  display: none; /* 기본적으로 모달을 숨깁니다 */
-  position: fixed;
-  z-index: 1;
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
-  overflow: auto;
-  background-color: rgb(0,0,0);
-  background-color: rgba(0,0,0,0.4); /* 검은색 배경 */
-  padding-top: 60px;
-}
-
-.modal-content {
-  background-color: #fefefe;
-  margin: 5% auto;
+/* post.ejs 관련 스타일 추가 */
+.post-container {
+  max-width: 800px;
+  margin: 0 auto;
   padding: 20px;
-  border: 1px solid #888;
-  width: 80%;
-  max-width: 400px; /* 최대 너비 */
+  background-color: white;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  margin-top: 20px;
 }
 
-.close {
-  color: #aaa;
-  float: right;
-  font-size: 28px;
+.post-row {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.post-group {
+  margin-bottom: 20px;
+  width: 100%;
+}
+
+.post-group label {
+  display: block;
+  margin-bottom: 8px;
   font-weight: bold;
+  font-size: 16px;
 }
 
-.close:hover,
-.close:focus {
-  color: black;
-  text-decoration: none;
-  cursor: pointer;
+.post-group p {
+  margin: 0;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  box-sizing: border-box;
+  font-size: 14px;
+  background-color: #f9f9f9;
+}
+
+.half-width {
+  width: calc(50% - 10px); /* 두 개의 필드 사이에 간격을 위해 조정 */
+}
+
+.image-preview-container {
+  width: 100%;
+  height: 200px; /* 이미지 업로드 필드의 높이를 조절 */
+  border: 2px dashed #ccc;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  position: relative;
+  overflow: hidden; /* 이미지가 컨테이너를 벗어나지 않도록 설정 */
+}
+
+.image-preview-container img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain; /* 이미지가 잘리지 않고 박스 안에 맞게 표시 */
+}
+
+.info-group {
+  display: flex;
+  justify-content: space-between;
+}
+
+.info-group p {
+  flex: 1;
+  margin-right: 10px;
+}
+
+.info-group p:last-child {
+  margin-right: 0;
 }
