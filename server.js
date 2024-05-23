@@ -50,26 +50,57 @@ app.use(session({
   }
 }));
 
-//분류 페이지
 app.get('/categories', (req, res) => {
   const user = req.session.user || {};
   const sort = req.query.sort || 'latest';
-  let getPosts = '';
+  const page = parseInt(req.query.page) || 1; // 현재 페이지 번호
+  const itemsPerPage = 12; // 페이지당 항목 수
+  const offset = (page - 1) * itemsPerPage;
 
+  let getPosts = '';
   if (sort === 'views') {
-    getPosts = 'SELECT * FROM post ORDER BY Views DESC'; // 조회수 순 정렬
+    getPosts = `SELECT p.*, 
+                      (SELECT COUNT(*) FROM Comment c WHERE c.CommentPostNumber = p.PostNumber) AS commentCount
+               FROM Post p 
+               WHERE p.postdeleteflag = "N" 
+               ORDER BY p.Views DESC 
+               LIMIT ?, ?`; // 여기바뀜
   } else {
-    getPosts = 'SELECT * FROM post ORDER BY PostNumber DESC'; // 최신순 정렬
+    getPosts = `SELECT p.*, 
+                      (SELECT COUNT(*) FROM Comment c WHERE c.CommentPostNumber = p.PostNumber) AS commentCount
+               FROM Post p 
+               WHERE p.postdeleteflag = "N" 
+               ORDER BY p.PostNumber DESC 
+               LIMIT ?, ?`; // 여기바뀜
   }
 
-  db.query(getPosts, (err, results) => {
+  db.query(getPosts, [offset, itemsPerPage], (err, results) => {
     if (err) {
       console.error('게시글 가져오기 실패: ' + err.stack);
       return;
     }
-    res.render('categories.ejs', { user: user, post: results, sort: sort });
+
+    const countQuery = 'SELECT COUNT(*) AS count FROM post WHERE postdeleteflag = "N"';
+    db.query(countQuery, (err, countResult) => {
+      if (err) {
+        console.error('게시글 수 가져오기 실패: ' + err.stack);
+        return;
+      }
+
+      const totalItems = countResult[0].count;
+      const totalPages = Math.ceil(totalItems / itemsPerPage);
+
+      res.render('categories.ejs', {
+        user: user,
+        post: results, // 결과를 post로 유지 // 여기바뀜
+        sort: sort,
+        currentPage: page,
+        totalPages: totalPages
+      });
+    });
   });
 });
+
 
 //메인페이지
 app.get('/', (req, res) => {
@@ -187,35 +218,160 @@ app.post('/write', upload.single('image'), (req, res) => {
   });
 });
 
+// 게시글 내용 보여주는 곳
 app.get('/post/:id', (req, res) => {
   const user = req.session.user || {};
-  console.log(user.MemberNumber);
-  console.log(req.params.id);
   const PostNumber = req.params.id;
 
-  const query = 'SELECT * FROM post WHERE PostNumber = ?';
-  db.query(query, [PostNumber], (err, result) => {
-    if (err) throw err;
-    if (result.length > 0) {
-      const post = result[0];
-      // MySQL 타임스탬프 컬럼이 실제로 'TIMESTAMP'인지 확인
+  const postQuery = 'SELECT * FROM Post WHERE PostNumber = ? AND postdeleteflag = "N"';
+  const commentsQuery = 'SELECT * FROM Comment WHERE CommentPostNumber = ? ORDER BY CommentTimestamp DESC'; // 여기수정함: CommentTimestamp로 수정
+
+  db.query(postQuery, [PostNumber], (err, postResult) => { // 여기수정함: postQuery로 수정
+    if (err) {
+      console.error('게시글 조회 실패: ' + err.stack);
+      return;
+    }
+    if (postResult.length > 0) {
+      const post = postResult[0];
       post.formattedTimestamp = moment(post.TIMESTAMP).format('YYYY-MM-DD HH:mm:ss');
 
-      // 조회수를 증가시키는 SQL 쿼리
-      const updateViewsQuery = `UPDATE post SET views = views + 1 WHERE PostNumber = ?`;
-      db.query(updateViewsQuery, [PostNumber], (err, updateResult) => {
-        if (err) {
-          console.error('Failed to update views:', err);
-          res.status(500).send('Server error');
-          return;
-        }
-        res.render('post', { post: post, user: user });
+      db.query(commentsQuery, [PostNumber], (err, commentsResult) => { // 여기수정함: commentsQuery로 댓글 조회 추가
+        if (err) throw err;
+        const comments = commentsResult;
+
+        // 조회수를 증가시키는 SQL 쿼리
+        const updateViewsQuery = `UPDATE Post SET Views = Views + 1 WHERE PostNumber = ?`;
+        db.query(updateViewsQuery, [PostNumber], (err) => {
+          if (err) {
+            console.error('조회수 업데이트 실패: ' + err);
+            res.status(500).send('Server error');
+            return;
+          }
+          res.render('post', { post: post, user: user, comments: comments, moment: moment }); // 여기수정함: 댓글 데이터 추가
+        });
       });
     } else {
       res.send('Post not found');
     }
   });
 });
+
+// 댓글 작성 라우트 추가
+app.post('/post/:id/comment', (req, res) => {
+  const user = req.session.user;
+  if (!user) {
+    return res.status(401).send('<script type="text/javascript">alert("로그인이 필요한 서비스입니다."); window.location="/login"; </script>');
+  }
+
+  const PostNumber = req.params.id;
+  const { commentContent } = req.body;
+  const insertCommentQuery = 'INSERT INTO Comment (CommentPostNumber, CommentAuthorNumber, CommentAuthorNickname, CommentContent, CommentTimestamp) VALUES (?, ?, ?, ?, NOW())';
+
+  db.query(insertCommentQuery, [PostNumber, user.MemberNumber, user.Nickname, commentContent], (err, results) => {
+    if (err) {
+      console.error('댓글 작성 실패: ' + err.stack);
+      return res.status(500).send('Server error');
+    }
+    res.redirect(`/post/${PostNumber}`);
+  });
+});
+
+
+//수정 페이지에 원본 게시글 내용 불러오기
+app.get('/edit/:id', (req, res) => {
+  const user = req.session.user || {};
+  const PostNumber = req.params.id;
+  const query = 'SELECT * FROM post WHERE PostNumber = ? AND postdeleteflag = "N"'; 
+  db.query(query, [PostNumber], (err, result) => {
+    if (err) throw err;
+    if (result.length > 0) {
+      const post = result[0];
+      res.render('edit', { post: post, user: user });
+    } else {
+      res.send('Post not found');
+    }
+  });
+});
+
+//수정한 내용을 데이터베이스에 저장
+app.post('/edit/:id', upload.single('image'), (req, res) => {
+  const { title, intro, method, category, people, time, difficulty, nickname, userId, timestamp, PostNumber } = req.body;
+  const imagePath = req.file ? `/uploads/${req.file.filename}` : null;
+
+  let updatePostQuery;
+  let queryParams;
+
+  if (imagePath) {
+    updatePostQuery = 'UPDATE post SET title = ?, intro = ?, method = ?, category = ?, people = ?, time = ?, difficulty = ?, ImagePath = ? WHERE PostNumber = ?';
+    queryParams = [title, intro, method, category, people, time, difficulty, imagePath, PostNumber];
+  } else {
+    updatePostQuery = 'UPDATE post SET title = ?, intro = ?, method = ?, category = ?, people = ?, time = ?, difficulty = ? WHERE PostNumber = ?';
+    queryParams = [title, intro, method, category, people, time, difficulty, PostNumber];
+  }
+
+  db.query(updatePostQuery, queryParams, (err, results) => {
+    if (err) {
+      console.error('게시글 수정 실패: ' + err.stack);
+      return;
+    }
+    res.redirect('/categories');
+  });
+});
+
+//삭제 기능
+app.post('/delete', (req, res) => {
+  const PostNumber = req.body['PostNumber'];
+  const query = 'UPDATE post SET postdeleteflag = "Y" WHERE PostNumber = ?';
+  db.query(query, [PostNumber], (err, result) => {
+    if (err) {
+      console.error('게시글 삭제 실패: ' + err.stack);
+      return;
+    }
+    res.redirect('/categories');
+  });
+});
+
+// 추천 기능
+app.post('/post/:id/recommend', (req, res) => {
+  const user = req.session.user;
+  if (!user) {
+    return res.status(401).send('<script type="text/javascript">alert("로그인이 필요한 서비스입니다."); window.location="/login"; </script>');
+  }
+
+  const PostNumber = req.params.id;
+  const MemberNumber = user.MemberNumber;
+
+  // 추천 여부 확인 쿼리
+  const checkRecommendationQuery = 'SELECT * FROM PostRecommendations WHERE PostNumber = ? AND MemberNumber = ?';
+  db.query(checkRecommendationQuery, [PostNumber, MemberNumber], (err, results) => {
+    if (err) {
+      console.error('추천 여부 확인 실패: ' + err.stack);
+      return res.status(500).send('Server error');
+    }
+    if (results.length > 0) {
+      return res.send('<script type="text/javascript">alert("이미 추천 누른 게시글 입니다."); window.location="/post/' + PostNumber + '"; </script>');
+    } else {
+      // 추천 추가 쿼리
+      const addRecommendationQuery = 'INSERT INTO PostRecommendations (PostNumber, MemberNumber) VALUES (?, ?)';
+      db.query(addRecommendationQuery, [PostNumber, MemberNumber], (err, result) => {
+        if (err) {
+          console.error('추천 추가 실패: ' + err.stack);
+          return res.status(500).send('Server error');
+        }
+        // 게시글 추천수 증가 쿼리
+        const updateRecommendCountQuery = 'UPDATE Post SET RecommendCounts = RecommendCounts + 1 WHERE PostNumber = ?';
+        db.query(updateRecommendCountQuery, [PostNumber], (err) => {
+          if (err) {
+            console.error('추천수 업데이트 실패: ' + err.stack);
+            return res.status(500).send('Server error');
+          }
+          res.redirect('/post/' + PostNumber);
+        });
+      });
+    }
+  });
+});
+
 
 // 서버 실행
 app.listen(8080, () => {
