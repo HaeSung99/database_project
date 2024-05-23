@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>랭킹 페이지</title>
+  <link rel="stylesheet" href="/main.css">
+</head>
+<body>
+  <%- include('partials/nav') %> <!-- 공통 네비게이션 바 포함 -->
+
+  <div class="container">
+    <h1>랭킹 페이지</h1>
+    
+    <div class="ranking-category">
+      <h2>일간 순위</h2>
+      <div class="ranking-posts">
+        <% dailyresult.forEach((post, index) => { %>
+          <a href="/post/<%= post.PostNumber %>" class="ranking-post">
+            <div class="ranking-label">TOP <%= index + 1 %></div>
+            <div class="post-ranking">
+              <div class="post-image">
+                <img src="<%= post.ImagePath %>" alt="요리 대표 사진">
+              </div>
+              <div class="post-content">
+                <h2><%= post.Title %></h2>
+                <p>작성자: <%= post.AuthorNickname %></p>
+                <p>조회수: <%= post.viewCount %></p>
+                <p>추천수: <%= post.recommendCount %></p>
+                <p>댓글수: <%= post.commentCount %></p>
+              </div>
+            </div>
+          </a>
+        <% }); %>
+      </div>
+    </div>
+    
+    <div class="ranking-category">
+      <h2>주간 순위</h2>
+      <div class="ranking-posts">
+        <% weeklyresult.forEach((post, index) => { %>
+          <a href="/post/<%= post.PostNumber %>" class="ranking-post">
+            <div class="ranking-label">TOP <%= index + 1 %></div>
+            <div class="post-ranking">
+              <div class="post-image">
+                <img src="<%= post.ImagePath %>" alt="요리 대표 사진">
+              </div>
+              <div class="post-content">
+                <h2><%= post.Title %></h2>
+                <p>작성자: <%= post.AuthorNickname %></p>
+                <p>조회수: <%= post.viewCount %></p>
+                <p>추천수: <%= post.recommendCount %></p>
+                <p>댓글수: <%= post.commentCount %></p>
+              </div>
+            </div>
+          </a>
+        <% }); %>
+      </div>
+    </div>
+
+    <div class="ranking-category">
+        <h2>월간 순위</h2>
+        <div class="ranking-posts">
+          <% monthlyresult.forEach((post, index) => { %>
+            <a href="/post/<%= post.PostNumber %>" class="ranking-post">
+              <div class="ranking-label">TOP <%= index + 1 %></div>
+              <div class="post-ranking">
+                <div class="post-image">
+                  <img src="<%= post.ImagePath %>" alt="요리 대표 사진">
+                </div>
+                <div class="post-content">
+                  <h2><%= post.Title %></h2>
+                  <p>작성자: <%= post.AuthorNickname %></p>
+                  <p>조회수: <%= post.viewCount %></p>
+                  <p>추천수: <%= post.recommendCount %></p>
+                  <p>댓글수: <%= post.commentCount %></p>
+                </div>
+              </div>
+            </a>
+          <% }); %>
+        </div>
+      </div>
+    
+    <div class="ranking-category">
+      <h2>연간 순위</h2>
+      <div class="ranking-posts">
+        <% yearlyresult.forEach((post, index) => { %>
+          <a href="/post/<%= post.PostNumber %>" class="ranking-post">
+            <div class="ranking-label">TOP <%= index + 1 %></div>
+            <div class="post-ranking">
+              <div class="post-image">
+                <img src="<%= post.ImagePath %>" alt="요리 대표 사진">
+              </div>
+              <div class="post-content">
+                <h2><%= post.Title %></h2>
+                <p>작성자: <%= post.AuthorNickname %></p>
+                <p>조회수: <%= post.viewCount %></p>
+                <p>추천수: <%= post.recommendCount %></p>
+                <p>댓글수: <%= post.commentCount %></p>
+              </div>
+            </div>
+          </a>
+        <% }); %>
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>

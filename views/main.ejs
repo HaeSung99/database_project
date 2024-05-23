@@ -7,8 +7,26 @@
   <link rel="stylesheet" href="/main.css">
 </head>
 <body>
-  <%- include ('partials/nav') %> <!-- 공통 네비게이션 바 포함 -->
+  <%- include('partials/nav') %> <!-- 공통 네비게이션 바 포함 -->
 
+  <div class="container">
+    <h1>오늘의 추천 레시피</h1>
+    <div class="recommended-posts">
+      <% randomPosts.forEach((post) => { %>
+        <div class="recommended-post">
+          <div class="post-image">
+            <img src="<%= post.ImagePath %>" alt="요리 대표 사진">
+          </div>
+          <div class="post-content">
+            <h2><a href="/post/<%= post.PostNumber %>"><%= post.Title %></a></h2>
+            <p>작성자: <%= post.AuthorNickname %></p>
+            <p>조회수: <%= post.Views %></p>
+            <p>추천수: <%= post.RecommendCounts %></p>
+          </div>
+        </div>
+      <% }); %>
+    </div>
+  </div>
 
   <!-- 나머지 메인 페이지 내용 -->
 </body>
