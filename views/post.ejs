@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title><%= post.title %></title>
+  <title><%= post.Title %></title>
   <link rel="stylesheet" href="/main.css">
 </head>
 <body>
@@ -53,16 +53,54 @@
     <div class="post-group">
       <label>조회수</label>
       <p><%= post.Views %></p>
+    </div>
+    <div class="post-group">
+      <label>추천수</label>
+      <p><%= post.RecommendCounts %></p>
+    </div>
+    <!-- 추천 버튼 -->
+    <div class="button-group">
+      <form action="/post/<%= post.PostNumber %>/recommend" method="POST" style="display: inline;">
+        <button id="recommendButton" type="submit">추천</button>
+      </form>
+    </div>
     <!-- 수정, 삭제 버튼 -->
-    <!-- 만약 작성자가 로그인한 사용자라면 수정, 삭제 버튼을 보여줍니다. -->
-    <% if (post.AuthorMemberNumber === user['MemberNumber'] ) { %>
+    <% if (post.AuthorMemberNumber === user.MemberNumber) { %>
       <div class="button-group">
-        <button id="editButton" onclick="location.href='/edit/<%= post.PostNumber %>'">수정</button> <!-- post.id를 post.PostNumber로 수정 -->
+        <button id="editButton" onclick="location.href='/edit/<%= post.PostNumber %>'">수정</button>
         <form action="/delete" method="post" style="display: inline;">
-          <button id="deleteButton" type="submit"><input type="hidden" id="PostNumber" name="PostNumber" value="<%= post.PostNumber %>">삭제</button>
+          <input type="hidden" name="PostNumber" value="<%= post.PostNumber %>">
+          <button id="deleteButton" type="submit">삭제</button>
         </form>
       </div>
     <% } %>
+
+    <!-- 댓글 섹션 -->
+    <div class="comments-container">
+      <h2>댓글</h2>
+
+      <!-- 댓글 목록 -->
+      <div class="comments-list">
+        <% comments.forEach(function(comment) { %>
+          <div class="comment">
+            <div class="comment-header">
+              <strong><%= comment.CommentAuthorNickname %></strong>
+              <small><%= moment(comment.CommentTimestamp).format('YYYY-MM-DD HH:mm:ss') %></small>
+            </div>
+            <p class="comment-content"><%= comment.CommentContent %></p>
+          </div>
+        <% }); %>
+      </div>
+
+      <!-- 댓글 작성 폼 -->
+      <div class="comment-form">
+        <h3>댓글 작성</h3>
+        <form action="/post/<%= post.PostNumber %>/comment" method="POST">
+          <textarea name="commentContent" rows="4" required></textarea><br>
+          <button type="submit" class="submit-btn">댓글 작성</button>
+        </form>
+      </div>
+    </div>
   </div>
 </body>
 </html>

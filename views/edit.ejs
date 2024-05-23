@@ -8,7 +8,6 @@
 </head>
 <body>
   <%- include('partials/nav') %> <!-- 공통 네비게이션 바 포함 -->
-  <% console.log(post) %>
 
   <h1>글쓰기</h1>
   <form id="editForm" action="/edit/:post.PostNumber" method="post" enctype="multipart/form-data">
@@ -16,7 +15,7 @@
       <div class="form-row">
         <div class="form-group half-width">
           <label for="title">제목</label>
-          <input type="text" id="title" name="title" value="<%= post.Title %>" required>
+          <input type="text" id="title" name="title" maxlength="60" value="<%= post.Title %>" required>
         </div>
         <div class="form-group half-width image-upload">
           <label for="image">요리 대표 사진</label>
@@ -60,12 +59,14 @@
             <option value="2인" <%= post.people === '2인' ? 'selected' : '' %>>2인</option>
             <option value="3인" <%= post.people === '3인' ? 'selected' : '' %>>3인</option>
             <option value="4인" <%= post.people === '4인' ? 'selected' : '' %>>4인</option>
+            <option value="5인이상" <%= post.people === '5인이상' ? 'selected' : '' %>>5인이상</option>
           </select>
           <select id="time" name="time">
             <option value="시간" <%= post.time === '시간' ? 'selected' : '' %>>시간</option>
             <option value="10분 이내" <%= post.time === '10분 이내' ? 'selected' : '' %>>10분 이내</option>
             <option value="20분 이내" <%= post.time === '20분 이내' ? 'selected' : '' %>>20분 이내</option>
             <option value="30분 이내" <%= post.time === '30분 이내' ? 'selected' : '' %>>30분 이내</option>
+            <option value="30분 이상" <%= post.time === '30분 이상' ? 'selected' : '' %>>30분 이상</option>
           </select>
           <select id="difficulty" name="difficulty">
             <option value="난이도" <%= post.difficulty === '난이도' ? 'selected' : '' %>>난이도</option>

@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>메인 페이지</title>
+  <title>카테고리 페이지</title>
   <link rel="stylesheet" href="/main.css">
 </head>
 <body>
-  <%- include ('partials/nav') %> <!-- 공통 네비게이션 바 포함 -->
+  <%- include('partials/nav') %> <!-- 공통 네비게이션 바 포함 -->
 
   <h1>게시글 목록</h1>
   
@@ -16,32 +16,52 @@
     <a href="/categories/?sort=latest" class="sort-button <%= sort === 'latest' ? 'active' : '' %>">최신순</a>
     <a href="/categories/?sort=views" class="sort-button <%= sort === 'views' ? 'active' : '' %>">조회수순</a>
   </div>
-  
-  <div class="container" id="posts-container">
-    <% if (post.length > 0) { %>
-      <div class="posts">
-        <% post.forEach(function(p) { %>
-          <div class="post">
-            <a href="/post/<%= p.PostNumber %>">
-              <div class="post-image">
-                <% if (p.ImagePath) { %>
-                  <img src="<%= p.ImagePath %>" alt="게시글 이미지">
-                <% } else { %>
-                  <img src="/public/기본이미지.png" alt="기본 이미지">
-                <% } %>
+
+  <!-- 게시글 내용 보여주는 부분 -->
+<div class="container" id="posts-container">
+  <% if (post.length > 0) { %>
+    <div class="posts">
+      <% for (let i = 0; i < post.length; i++) { %>
+        <% if (i % 4 === 0) { %>
+          <div class="post-row">
+        <% } %>
+            <div class="post">
+              <a href="/post/<%= post[i].PostNumber %>">
+                <div class="post-image">
+                  <% if (post[i].ImagePath) { %>
+                    <img src="<%= post[i].ImagePath %>" alt="게시글 이미지">
+                  <% } else { %>
+                    <img src="/public/기본이미지.png" alt="기본 이미지">
+                  <% } %>
+                </div>
+              </a>
+              <div class="post-content">
+                <h2><%= post[i].Title %></h2>
+                <p>작성자 : <%= post[i].AuthorNickname %></p>
+                <p><%= post[i].Content %></p>
+                <p>조회수 : <%= post[i].Views %> &nbsp;&nbsp; 댓글수 : <%= post[i].commentCount %> &nbsp;&nbsp; 추천수 : <%= post[i].RecommendCounts %></p>
               </div>
-            </a>
-            <div class="post-content">
-              <h2><%= p.Title %></h2>
-              <p>작성자: <%= p.AuthorNickname %></p>
-              <p><%= p.Content %></p>
-              <p>조회수: <%= p.Views %> &nbsp;&nbsp; 댓글수: <%= p.RecommendCounts %></p>
             </div>
+        <% if ((i + 1) % 4 === 0 || i === post.length - 1) { %>
           </div>
-        <% }); %>
-      </div>
-    <% } else { %>
-      <p>게시글이 없습니다.</p>
+        <% } %>
+      <% } %>
+    </div>
+  <% } else { %>
+    <p>게시글이 없습니다.</p>
+  <% } %>
+</div>
+
+
+
+  <!-- 페이지네이션 -->
+  <div class="pagination" style="text-align: center; margin-top: 20px;">
+    <% for (let i = 1; i <= totalPages; i++) { %>
+      <% if (i === currentPage) { %>
+        <span class="current-page" style="margin: 0 5px;"><%= i %></span>
+      <% } else { %>
+        <a href="/categories?page=<%= i %>&sort=<%= sort %>" style="margin: 0 5px;"><%= i %></a>
+      <% } %>
     <% } %>
   </div>
 </body>
