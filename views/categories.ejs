@@ -9,50 +9,114 @@
 <body>
   <%- include('partials/nav') %> <!-- 공통 네비게이션 바 포함 -->
 
-  <h1>게시글 목록</h1>
-  
-  <!-- 정렬 버튼들 -->
+  <h1>분류</h1>
+
+  <!-- 정렬 버튼 -->
   <div class="sort-buttons">
-    <a href="/categories/?sort=latest" class="sort-button <%= sort === 'latest' ? 'active' : '' %>">최신순</a>
-    <a href="/categories/?sort=views" class="sort-button <%= sort === 'views' ? 'active' : '' %>">조회수순</a>
+    <form action="/categories" method="get">
+      <input type="hidden" name="query" value="<%= searchQuery %>">
+      <input type="hidden" name="sort" value="latest">
+      <input type="hidden" name="category" value="<%= category %>">
+      <input type="hidden" name="difficulty" value="<%= difficulty %>">
+      <input type="hidden" name="people" value="<%= people %>">
+      <input type="hidden" name="time" value="<%= time %>">
+      <button type="submit" class="sort-button <%= sort === 'latest' ? 'active' : '' %>">최신순</button>
+    </form>
+    <form action="/categories" method="get">
+      <input type="hidden" name="query" value="<%= searchQuery %>">
+      <input type="hidden" name="sort" value="views">
+      <input type="hidden" name="category" value="<%= category %>">
+      <input type="hidden" name="difficulty" value="<%= difficulty %>">
+      <input type="hidden" name="people" value="<%= people %>">
+      <input type="hidden" name="time" value="<%= time %>">
+      <button type="submit" class="sort-button <%= sort === 'views' ? 'active' : '' %>">조회수순</button>
+    </form>
+  </div>
+
+  <!-- 필터 박스 -->
+  <div class="filter-box">
+    <form id="filterForm" action="/categories" method="get">
+      <input type="hidden" name="query" value="<%= searchQuery %>">
+
+      <div class="filter-group">
+        <h2>카테고리</h2>
+        <button type="button" class="filter-button <%= !category ? 'active' : '' %>" data-filter="category" data-value="">선택안함</button>
+        <button type="button" class="filter-button <%= category === '한식' ? 'active' : '' %>" data-filter="category" data-value="한식">한식</button>
+        <button type="button" class="filter-button <%= category === '중식' ? 'active' : '' %>" data-filter="category" data-value="중식">중식</button>
+        <button type="button" class="filter-button <%= category === '일식' ? 'active' : '' %>" data-filter="category" data-value="일식">일식</button>
+        <button type="button" class="filter-button <%= category === '기타' ? 'active' : '' %>" data-filter="category" data-value="기타">기타</button>
+      </div>
+
+      <div class="filter-group">
+        <h2>난이도</h2>
+        <button type="button" class="filter-button <%= !difficulty ? 'active' : '' %>" data-filter="difficulty" data-value="">선택안함</button>
+        <button type="button" class="filter-button <%= difficulty === '초급' ? 'active' : '' %>" data-filter="difficulty" data-value="초급">초급</button>
+        <button type="button" class="filter-button <%= difficulty === '중급' ? 'active' : '' %>" data-filter="difficulty" data-value="중급">중급</button>
+        <button type="button" class="filter-button <%= difficulty === '고급' ? 'active' : '' %>" data-filter="difficulty" data-value="고급">고급</button>
+      </div>
+
+      <div class="filter-group">
+        <h2>식사 인원</h2>
+        <button type="button" class="filter-button <%= !people ? 'active' : '' %>" data-filter="people" data-value="">선택안함</button>
+        <button type="button" class="filter-button <%= people === '1인' ? 'active' : '' %>" data-filter="people" data-value="1인">1인</button>
+        <button type="button" class="filter-button <%= people === '2인' ? 'active' : '' %>" data-filter="people" data-value="2인">2인</button>
+        <button type="button" class="filter-button <%= people === '3인' ? 'active' : '' %>" data-filter="people" data-value="3인">3인</button>
+        <button type="button" class="filter-button <%= people === '4인' ? 'active' : '' %>" data-filter="people" data-value="4인">4인</button>
+        <button type="button" class="filter-button <%= people === '5인' ? 'active' : '' %>" data-filter="people" data-value="5인">5인</button>
+      </div>
+
+      <div class="filter-group">
+        <h2>시간</h2>
+        <button type="button" class="filter-button <%= !time ? 'active' : '' %>" data-filter="time" data-value="">선택안함</button>
+        <button type="button" class="filter-button <%= time === '10분 이내' ? 'active' : '' %>" data-filter="time" data-value="10분 이내">10분 이내</button>
+        <button type="button" class="filter-button <%= time === '20분 이내' ? 'active' : '' %>" data-filter="time" data-value="20분 이내">20분 이내</button>
+        <button type="button" class="filter-button <%= time === '30분 이내' ? 'active' : '' %>" data-filter="time" data-value="30분 이내">30분 이내</button>
+        <button type="button" class="filter-button <%= time === '30분 이상' ? 'active' : '' %>" data-filter="time" data-value="30분 이상">30분 이상</button>
+      </div>
+
+      <input type="hidden" name="category" id="categoryFilter" value="<%= category %>">
+      <input type="hidden" name="difficulty" id="difficultyFilter" value="<%= difficulty %>">
+      <input type="hidden" name="people" id="peopleFilter" value="<%= people %>">
+      <input type="hidden" name="time" id="timeFilter" value="<%= time %>">
+      
+      <button type="submit" class="apply-filters-button">필터 적용</button>
+    </form>
   </div>
 
   <!-- 게시글 내용 보여주는 부분 -->
-<div class="container" id="posts-container">
-  <% if (post.length > 0) { %>
-    <div class="posts">
-      <% for (let i = 0; i < post.length; i++) { %>
-        <% if (i % 4 === 0) { %>
-          <div class="post-row">
-        <% } %>
-            <div class="post">
-              <a href="/post/<%= post[i].PostNumber %>">
-                <div class="post-image">
-                  <% if (post[i].ImagePath) { %>
-                    <img src="<%= post[i].ImagePath %>" alt="게시글 이미지">
-                  <% } else { %>
-                    <img src="/public/기본이미지.png" alt="기본 이미지">
-                  <% } %>
+  <div class="container" id="posts-container">
+    <% if (post.length > 0) { %>
+      <div class="posts">
+        <% for (let i = 0; i < post.length; i++) { %>
+          <% if (i % 4 === 0) { %>
+            <div class="post-row">
+          <% } %>
+              <div class="post">
+                <a href="/post/<%= post[i].PostNumber %>">
+                  <div class="post-image">
+                    <% if (post[i].ImagePath) { %>
+                      <img src="<%= post[i].ImagePath %>" alt="게시글 이미지">
+                    <% } else { %>
+                      <img src="/public/기본이미지.png" alt="기본 이미지">
+                    <% } %>
+                  </div>
+                </a>
+                <div class="post-content">
+                  <h2><%= post[i].Title %></h2>
+                  <p>작성자 : <%= post[i].AuthorNickname %></p>
+                  <p><%= post[i].Content %></p>
+                  <p>조회수 : <%= post[i].Views %> &nbsp;&nbsp; 댓글수 : <%= post[i].commentCount %> &nbsp;&nbsp; 추천수 : <%= post[i].RecommendCounts %></p>
                 </div>
-              </a>
-              <div class="post-content">
-                <h2><%= post[i].Title %></h2>
-                <p>작성자 : <%= post[i].AuthorNickname %></p>
-                <p><%= post[i].Content %></p>
-                <p>조회수 : <%= post[i].Views %> &nbsp;&nbsp; 댓글수 : <%= post[i].commentCount %> &nbsp;&nbsp; 추천수 : <%= post[i].RecommendCounts %></p>
               </div>
+          <% if ((i + 1) % 4 === 0 || i === post.length - 1) { %>
             </div>
-        <% if ((i + 1) % 4 === 0 || i === post.length - 1) { %>
-          </div>
+          <% } %>
         <% } %>
-      <% } %>
-    </div>
-  <% } else { %>
-    <p>게시글이 없습니다.</p>
-  <% } %>
-</div>
-
-
+      </div>
+    <% } else { %>
+      <p>게시글이 없습니다.</p>
+    <% } %>
+  </div>
 
   <!-- 페이지네이션 -->
   <div class="pagination" style="text-align: center; margin-top: 20px;">
@@ -64,5 +128,26 @@
       <% } %>
     <% } %>
   </div>
+
+  <script>
+    document.querySelectorAll('.filter-button').forEach(button => {
+      button.addEventListener('click', () => {
+        const filterType = button.getAttribute('data-filter');
+        const filterValue = button.getAttribute('data-value');
+
+        // 모든 버튼에서 active 클래스 제거
+        document.querySelectorAll(`.filter-button[data-filter="${filterType}"]`).forEach(btn => {
+          btn.classList.remove('active');
+        });
+
+        // 선택한 버튼에 active 클래스 추가
+        button.classList.add('active');
+
+        // 숨겨진 필드 업데이트
+        document.getElementById(`${filterType}Filter`).value = filterValue;
+      });
+    });
+  </script>
+
 </body>
 </html>

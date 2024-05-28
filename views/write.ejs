@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>글쓰기</title>
-  <link rel="stylesheet" href="/write.css">
+  <link rel="stylesheet" href="/main.css">
 </head>
 <body>
     <%- include ('partials/nav') %> <!-- 공통 네비게이션 바 포함 -->
@@ -15,7 +15,7 @@
       <div class="form-row">
         <div class="form-group half-width">
           <label for="title">레시피 제목</label>
-          <input type="text" id="title" name="title" maxlength="60"  placeholder="둘이 먹어도 배부른 비빔밥" required>
+          <input type="text" id="title" name="title" maxlength="60" placeholder="둘이 먹어도 배부른 비빔밥" required>
         </div>
         <div class="form-group half-width image-upload">
           <label for="image">요리 대표 사진</label>
@@ -35,19 +35,19 @@
         <label for="method">요리 방법</label>
         <textarea id="method" name="method" placeholder="" required></textarea>
       </div>
-      <div class="form-group">
-        <label for="category">카테고리</label>
-        <select id="category" name="category">
-          <option value="한식">한식</option>
-          <option value="양식">양식</option>
-          <option value="일식">일식</option>
-          <option value="중식">중식</option>
-          <option value="기타">기타</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label for="people">요리정보</label>
-        <div class="info-group">
+      <div class="form-group three-inline">
+        <div>
+          <label for="category">카테고리</label>
+          <select id="category" name="category">
+            <option value="한식">한식</option>
+            <option value="양식">양식</option>
+            <option value="일식">일식</option>
+            <option value="중식">중식</option>
+            <option value="기타">기타</option>
+          </select>
+        </div>
+        <div>
+          <label for="people">식사 인원</label>
           <select id="people" name="people">
             <option value="인원">식사 인원</option>
             <option value="1인">1인</option>
@@ -55,24 +55,27 @@
             <option value="3인">3인</option>
             <option value="4인">4인</option>
             <option value="5인">5인</option>
-            <!-- 다른 옵션 추가 -->
           </select>
+        </div>
+        <div>
+          <label for="time">시간</label>
           <select id="time" name="time">
             <option value="시간">시간</option>
             <option value="10분 이내">10분 이내</option>
             <option value="20분 이내">20분 이내</option>
             <option value="30분 이내">30분 이내</option>
             <option value="30분 이상">30분 이상</option>
-            <!-- 다른 옵션 추가 -->
-          </select>
-          <select id="difficulty" name="difficulty">
-            <option value="난이도">난이도</option>
-            <option value="초급">초급</option>
-            <option value="중급">중급</option>
-            <option value="고급">고급</option>
-            <!-- 다른 옵션 추가 -->
           </select>
         </div>
+      </div>
+      <div class="form-group">
+        <label for="difficulty">난이도</label>
+        <select id="difficulty" name="difficulty">
+          <option value="난이도">난이도</option>
+          <option value="초급">초급</option>
+          <option value="중급">중급</option>
+          <option value="고급">고급</option>
+        </select>
       </div>
       <input type="hidden" id="userId" name="userId" value="<%= user.MemberNumber %>">
       <input type="hidden" id="nickname" name="nickname" value="<%= user.Nickname %>">

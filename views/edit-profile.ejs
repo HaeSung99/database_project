@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>회원정보 수정</title>
+    <link rel="stylesheet" href="/main.css">
+</head>
+<body>
+    <%- include('partials/nav') %> <!-- 공통 네비게이션 바 포함 -->
+
+    <div class="edit-content-container">
+        <h1 class="edit-content-title">회원정보 수정</h1>
+        
+        <!-- 현재 비밀번호 확인 폼 -->
+        <form id="currentPasswordForm" class="edit-form-group">
+            <label for="currentPassword" class="edit-form-label">현재 비밀번호:</label>
+            <input type="password" id="currentPassword" name="currentPassword" class="edit-form-input" required>
+            <button type="button" id="verifyPasswordButton" class="edit-form-button">확인</button>
+        </form>
+
+        <!-- 비밀번호 변경 폼 -->
+        <form id="changePasswordForm" action="/change-password" method="POST" class="edit-form-group" style="display: none;">
+            <label for="newPassword" class="edit-form-label">새 비밀번호:</label>
+            <input type="password" id="newPassword" name="newPassword" class="edit-form-input" required>
+            <label for="confirmPassword" class="edit-form-label">새 비밀번호 확인:</label>
+            <input type="password" id="confirmPassword" name="confirmPassword" class="edit-form-input" required>
+            <button type="submit" class="edit-form-button">비밀번호 변경</button>
+        </form>
+
+        <!-- 회원탈퇴 버튼 -->
+        <button id="deleteAccountButton" class="edit-form-button edit-delete-button" style="display: none;">회원탈퇴</button>
+    </div>
+
+    <script>
+        document.getElementById('verifyPasswordButton').addEventListener('click', function() {
+            const currentPassword = document.getElementById('currentPassword').value;
+
+            fetch('/verify-password', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ currentPassword: currentPassword })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('currentPasswordForm').style.display = 'none';
+                    document.getElementById('changePasswordForm').style.display = 'block';
+                    document.getElementById('deleteAccountButton').style.display = 'block';
+                } else {
+                    alert('현재 비밀번호가 일치하지 않습니다.');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        });
+
+        document.getElementById('deleteAccountButton').addEventListener('click', function() {
+            if (confirm('정말 탈퇴 하시겠습니까?')) {
+                window.location.href = '/delete-account';
+            }
+        });
+    </script>
+</body>
+</html>

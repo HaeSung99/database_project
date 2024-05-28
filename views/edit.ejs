@@ -3,19 +3,19 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>글쓰기</title>
-  <link rel="stylesheet" href="/write.css">
+  <title>글 수정</title>
+  <link rel="stylesheet" href="/main.css">
 </head>
 <body>
   <%- include('partials/nav') %> <!-- 공통 네비게이션 바 포함 -->
 
-  <h1>글쓰기</h1>
-  <form id="editForm" action="/edit/:post.PostNumber" method="post" enctype="multipart/form-data">
+  <h1>글 수정</h1>
+  <form id="writeForm" action="/edit/<%= post.PostNumber %>" method="post" enctype="multipart/form-data">
     <div class="form-container">
       <div class="form-row">
         <div class="form-group half-width">
-          <label for="title">제목</label>
-          <input type="text" id="title" name="title" maxlength="60" value="<%= post.Title %>" required>
+          <label for="title">레시피 제목</label>
+          <input type="text" id="title" name="title" maxlength="60" value="<%= post.Title %>" placeholder="둘이 먹어도 배부른 비빔밥" required>
         </div>
         <div class="form-group half-width image-upload">
           <label for="image">요리 대표 사진</label>
@@ -34,25 +34,25 @@
       </div>
       <div class="form-group">
         <label for="intro">요리 소개</label>
-        <textarea id="intro" name="intro" required><%= post.intro %></textarea>
+        <textarea id="intro" name="intro" placeholder="예: 이 요리는 간단하게 만들 수 있는 한식입니다." required><%= post.intro %></textarea>
       </div>
       <div class="form-group method">
         <label for="method">요리 방법</label>
-        <textarea id="method" name="method" required><%= post.method %></textarea>
+        <textarea id="method" name="method" placeholder="예: &#10;1. 재료 손질하기&#10;2. 팬에 기름 두르고 볶기&#10;3. 양념 넣고 조리하기" required><%= post.method %></textarea>
       </div>
-      <div class="form-group">
-        <label for="category">카테고리</label>
-        <select id="category" name="category">
-          <option value="한식" <%= post.category === '한식' ? 'selected' : '' %>>한식</option>
-          <option value="양식" <%= post.category === '양식' ? 'selected' : '' %>>양식</option>
-          <option value="일식" <%= post.category === '일식' ? 'selected' : '' %>>일식</option>
-          <option value="중식" <%= post.category === '중식' ? 'selected' : '' %>>중식</option>
-          <option value="기타" <%= post.category === '기타' ? 'selected' : '' %>>기타</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label for="people">요리정보</label>
-        <div class="info-group">
+      <div class="form-group three-inline">
+        <div>
+          <label for="category">카테고리</label>
+          <select id="category" name="category">
+            <option value="한식" <%= post.category === '한식' ? 'selected' : '' %>>한식</option>
+            <option value="양식" <%= post.category === '양식' ? 'selected' : '' %>>양식</option>
+            <option value="일식" <%= post.category === '일식' ? 'selected' : '' %>>일식</option>
+            <option value="중식" <%= post.category === '중식' ? 'selected' : '' %>>중식</option>
+            <option value="기타" <%= post.category === '기타' ? 'selected' : '' %>>기타</option>
+          </select>
+        </div>
+        <div>
+          <label for="people">식사 인원</label>
           <select id="people" name="people">
             <option value="인원" <%= post.people === '인원' ? 'selected' : '' %>>식사 인원</option>
             <option value="1인" <%= post.people === '1인' ? 'selected' : '' %>>1인</option>
@@ -61,6 +61,9 @@
             <option value="4인" <%= post.people === '4인' ? 'selected' : '' %>>4인</option>
             <option value="5인이상" <%= post.people === '5인이상' ? 'selected' : '' %>>5인이상</option>
           </select>
+        </div>
+        <div>
+          <label for="time">시간</label>
           <select id="time" name="time">
             <option value="시간" <%= post.time === '시간' ? 'selected' : '' %>>시간</option>
             <option value="10분 이내" <%= post.time === '10분 이내' ? 'selected' : '' %>>10분 이내</option>
@@ -68,13 +71,16 @@
             <option value="30분 이내" <%= post.time === '30분 이내' ? 'selected' : '' %>>30분 이내</option>
             <option value="30분 이상" <%= post.time === '30분 이상' ? 'selected' : '' %>>30분 이상</option>
           </select>
-          <select id="difficulty" name="difficulty">
-            <option value="난이도" <%= post.difficulty === '난이도' ? 'selected' : '' %>>난이도</option>
-            <option value="초급" <%= post.difficulty === '초급' ? 'selected' : '' %>>초급</option>
-            <option value="중급" <%= post.difficulty === '중급' ? 'selected' : '' %>>중급</option>
-            <option value="고급" <%= post.difficulty === '고급' ? 'selected' : '' %>>고급</option>
-          </select>
         </div>
+      </div>
+      <div class="form-group">
+        <label for="difficulty">난이도</label>
+        <select id="difficulty" name="difficulty">
+          <option value="난이도" <%= post.difficulty === '난이도' ? 'selected' : '' %>>난이도</option>
+          <option value="초급" <%= post.difficulty === '초급' ? 'selected' : '' %>>초급</option>
+          <option value="중급" <%= post.difficulty === '중급' ? 'selected' : '' %>>중급</option>
+          <option value="고급" <%= post.difficulty === '고급' ? 'selected' : '' %>>고급</option>
+        </select>
       </div>
       <input type="hidden" id="userId" name="userId" value="<%= user.MemberNumber %>">
       <input type="hidden" id="nickname" name="nickname" value="<%= user.Nickname %>">
@@ -134,7 +140,7 @@
     });
 
     // 입력 필드 검증
-    document.getElementById('editForm').addEventListener('submit', function(event) {
+    document.getElementById('writeForm').addEventListener('submit', function(event) {
       const title = document.getElementById('title').value.trim();
       const intro = document.getElementById('intro').value.trim();
       const method = document.getElementById('method').value.trim();

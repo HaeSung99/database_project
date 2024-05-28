@@ -9,13 +9,111 @@
         <a href="/community" class="nav-item">커뮤니티</a>
     </div>
     <div class="nav-right">
+        <form action="/categories" method="GET" class="search-form">
+            <input type="text" name="query" class="search-box" placeholder="레시피 검색">
+            <button type="submit" class="search-button">검색</button>
+        </form>
         <% if (user && user.MemberNumber) { %>
-            <span class="hello">등급 : <%= user.Grade %> <%= user.Nickname %>님 안녕하세요!</span>
+            <div class="user-info-box" id="userInfoBox">
+                <span class="hello"><%= user.Nickname %>님 안녕하세요!</span>
+            </div>
             <a href="/logout" class="nav-item" id="logoutBtn">로그아웃</a>
             <a href="/write" class="nav-item">글쓰기</a>
         <% } else { %>
-            <a href="/login" class="nav-item" id="loginBtn">로그인</a>
+            <a href="#" class="nav-item" id="loginBtn">로그인</a>
             <a href="/sign" class="nav-item">회원가입</a>
         <% } %>
     </div>
 </nav>
+
+<!-- 로그인 모달 -->
+<% if (!(user && user.MemberNumber)) { %>
+    <div id="loginModal" class="modal">
+        <div class="modal-content">
+            <span class="close" id="closeLoginModal">&times;</span>
+            <h1>로그인</h1>
+            <form action="/login" method="POST">
+                <label for="userId">ID:</label>
+                <input type="text" id="userId" name="userId"><br><br>
+                <label for="userPassword">PW:</label>
+                <input type="password" id="userPassword" name="userPassword"><br><br>
+                <button type="submit">로그인</button>
+            </form>
+        </div>
+    </div>
+<% } %>
+
+<!-- 유저 정보 모달 -->
+<% if (user && user.MemberNumber) { %>
+    <div id="userModal" class="modal-user user-modal-position">
+        <div class="modal-content user-modal-content">
+            <span class="close" id="closeUserModal">&times;</span>
+            <h2>내 정보</h2>
+            <p id="userGrade"></p>
+            <p id="userPostCount"></p>
+            <p id="userCommentCount"></p>
+            <a href="/edit-profile" class="button">회원정보수정</a>
+        </div>
+    </div>
+<% } %>
+
+<script>
+    <% if (!(user && user.MemberNumber)) { %>
+        // 로그인 모달 열기
+        document.getElementById('loginBtn').onclick = function() {
+            document.getElementById('loginModal').style.display = 'block';
+        }
+
+        // 로그인 모달 닫기
+        document.getElementById('closeLoginModal').onclick = function() {
+            document.getElementById('loginModal').style.display = 'none';
+        }
+    <% } %>
+
+    <% if (user && user.MemberNumber) { %>
+        // 유저 정보 모달 열기
+        document.getElementById('userInfoBox').onclick = function() {
+            var userModal = document.getElementById('userModal');
+            
+            // AJAX 요청을 통해 유저 정보 가져오기
+            fetch('/user-info')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        alert(data.error);
+                    } else {
+                        document.getElementById('userGrade').textContent = '등급: ' + data.Grade;
+                        document.getElementById('userPostCount').textContent = '내가 쓴 글: ' + data.PostCount + '개';
+                        document.getElementById('userCommentCount').textContent = '내가 쓴 댓글: ' + data.CommentCount + '개';
+                    }
+                })
+                .catch(error => {
+                    console.error('유저 정보 가져오기 실패:', error);
+                });
+
+            userModal.style.display = 'block';
+            userModal.style.top = '100%';
+            userModal.style.opacity = '0';
+            setTimeout(function() {
+                userModal.style.top = '20%';
+                userModal.style.opacity = '1';
+            }, 10); // 애니메이션 효과 적용
+        }
+
+        // 유저 정보 모달 닫기
+        document.getElementById('closeUserModal').onclick = function() {
+            var userModal = document.getElementById('userModal');
+            userModal.style.display = 'none';
+        }
+    <% } %>
+
+    // 모달 바깥 클릭 시 닫기
+    window.onclick = function(event) {
+        if (event.target == document.getElementById('loginModal')) {
+            document.getElementById('loginModal').style.display = 'none';
+        }
+        if (event.target == document.getElementById('userModal')) {
+            document.getElementById('userModal').style.display = 'none';
+        }
+    }
+</script>
