@@ -1,11 +1,11 @@
-const express = require('express');
-const app = express();
-const mysql = require('mysql2');
-const session = require('express-session');
-const multer = require('multer');
-const path = require('path');
-const moment = require('moment');
-const cron = require('cron');
+const express = require('express'); // Express 모듈 가져오기
+const app = express(); // Express 애플리케이션 생성
+const mysql = require('mysql2'); // MySQL 연결을 위한 라이브러리
+const session = require('express-session'); // 세션을 사용하기 위한 라이브러리
+const multer = require('multer'); // 파일 업로드를 위한 라이브러리
+const path = require('path'); // 파일 경로를 다루기 위한 라이브러리
+const moment = require('moment'); // 날짜 및 시간을 다루기 위한 라이브러리
+const cron = require('cron'); // 주기적으로 실행되는 작업을 설정하기 위한 라이브러리
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -30,7 +30,7 @@ db.connect(function(err) {
   console.log('연결 성공');
 });
 
-// Multer 설정
+// Multer 설정 
 const storage = multer.diskStorage({
   destination: function(req, file, cb) {
     cb(null, 'public/uploads/')
@@ -51,6 +51,7 @@ app.use(session({
   }
 }));
 
+// 매일 자정에 cacheRecommendations 함수 실행
 const job = new cron.CronJob('0 0 * * *', () => {
   cacheRecommendations();
 }, null, true, 'Asia/Seoul');
@@ -73,6 +74,10 @@ function getTodayRecommendations(callback) {
     if (result.length > 0) {
       // 캐시된 추천 레시피가 있는 경우
       let recommendations = JSON.parse(result[0].cache_value);
+
+      if (recommendations.length === 0) {
+        return callback(null, []);
+      }
 
       // 삭제된 게시글이 있는지 확인하고 제거
       const postNumbers = recommendations.map(post => post.PostNumber);
@@ -277,8 +282,6 @@ app.get('/categories', (req, res) => {
   });
 });
 
-
-
 // 메인페이지
 app.get('/', (req, res) => {
   const user = req.session.user || {};
@@ -416,7 +419,7 @@ app.post('/sign', (req, res) => {
 app.post('/write', upload.single('image'), (req, res) => {
   const { title, intro, method, category, people, time, difficulty, nickname, userId, timestamp } = req.body;
   const imagePath = req.file ? `/uploads/${req.file.filename}` : null;
-  const writePostQuery = 'INSERT INTO Post (AuthorMemberNumber, AuthorNickname, title, timestamp, intro, method, category, people, time, difficulty, ImagePath) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+  const writePostQuery = `INSERT INTO Post (AuthorMemberNumber, AuthorNickname, title, timestamp, intro, method, category, people, time, difficulty, ImagePath) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
   db.query(writePostQuery, [userId, nickname, title, timestamp, intro, method, category, people, time, difficulty, imagePath], (err, result) => {
     if (err) {
@@ -445,8 +448,8 @@ app.get('/post/:id', (req, res) => {
   const user = req.session.user || {};
   const PostNumber = req.params.id;
 
-  const postQuery = 'SELECT * FROM Post WHERE PostNumber = ? AND postdeleteflag = "N"';
-  const commentsQuery = 'SELECT * FROM Comment WHERE CommentPostNumber = ? ORDER BY CommentTimestamp DESC';
+  const postQuery = 'SELECT * FROM Post WHERE PostNumber = ? AND postdeleteflag = "N"'; // postdeleteflag가 N이고 PostNumber가 일치하는 게시글 조회 쿼리
+  const commentsQuery = 'SELECT * FROM Comment WHERE CommentPostNumber = ? ORDER BY CommentTimestamp DESC'; // CommentPostNumber가 일치하는 댓글을 최신순으로 조회하는 쿼리
 
   db.query(postQuery, [PostNumber], (err, postResult) => {
     if (err) {
@@ -461,14 +464,14 @@ app.get('/post/:id', (req, res) => {
         if (err) throw err;
         const comments = commentsResult;
 
-        const updateViewsQuery = `UPDATE Post SET Views = Views + 1 WHERE PostNumber = ?`;
+        const updateViewsQuery = 'UPDATE Post SET Views = Views + 1 WHERE PostNumber = ?'; // postnumber가 일치하는 게시글의 조회수를 1 증가시키는 쿼리
         db.query(updateViewsQuery, [PostNumber], (err) => {
           if (err) {
             console.error('조회수 업데이트 실패: ' + err);
             res.status(500).send('Server error');
             return;
           }
-          const addViewEventQuery = 'INSERT INTO ViewEvents (PostNumber, MemberNumber) VALUES (?, ?)';
+          const addViewEventQuery = 'INSERT INTO ViewEvents (PostNumber, MemberNumber) VALUES (?, ?)'; // 조회 이벤트를 기록하는 쿼리 (조회한 게시글의 번호와 조회한 회원의 번호를 기록)
           db.query(addViewEventQuery, [PostNumber, user.MemberNumber], (err) => {
             if (err) {
               console.error('조회 이벤트 기록 실패: ' + err.stack);
@@ -493,7 +496,7 @@ app.post('/post/:id/comment', (req, res) => {
 
   const PostNumber = req.params.id;
   const { commentContent } = req.body;
-  const insertCommentQuery = 'INSERT INTO Comment (CommentPostNumber, CommentAuthorNumber, CommentAuthorNickname, CommentContent, CommentTimestamp) VALUES (?, ?, ?, ?, NOW())';
+  const insertCommentQuery = 'INSERT INTO Comment (CommentPostNumber, CommentAuthorNumber, CommentAuthorNickname, CommentContent, CommentTimestamp) VALUES (?, ?, ?, ?, NOW())'; // 게시글 번호, 댓글 작성자 번호, 댓글 작성자 닉네임, 댓글 내용, 댓글 작성 시간을 기록하는 쿼리
 
   db.query(insertCommentQuery, [PostNumber, user.MemberNumber, user.Nickname, commentContent], (err, result) => {
     if (err) {
@@ -502,7 +505,7 @@ app.post('/post/:id/comment', (req, res) => {
     }
 
     const CommentNumber = result.insertId;
-    const addCommentEventQuery = 'INSERT INTO CommentEvents (CommentNumber, PostNumber, MemberNumber) VALUES (?, ?, ?)';
+    const addCommentEventQuery = 'INSERT INTO CommentEvents (CommentNumber, PostNumber, MemberNumber) VALUES (?, ?, ?)'; // 댓글 이벤트를 기록하는 쿼리 (댓글 번호, 게시글 번호, 댓글 작성자 번호를 기록)
     
     db.query(addCommentEventQuery, [CommentNumber, PostNumber, user.MemberNumber], (err) => {
       if (err) {
