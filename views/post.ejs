@@ -58,22 +58,20 @@
       <label>추천수</label>
       <p><%= post.RecommendCounts %></p>
     </div>
-    <!-- 추천 버튼 -->
+
+    <!-- 추천, 수정, 삭제 버튼 -->
     <div class="button-group">
       <form action="/post/<%= post.PostNumber %>/recommend" method="POST" style="display: inline;">
         <button id="recommendButton" type="submit">추천</button>
       </form>
-    </div>
-    <!-- 수정, 삭제 버튼 -->
-    <% if (post.AuthorMemberNumber === user.MemberNumber) { %>
-      <div class="button-group">
+      <% if (post.AuthorMemberNumber === user.MemberNumber) { %>
         <button id="editButton" onclick="location.href='/edit/<%= post.PostNumber %>'">수정</button>
-        <form action="/delete" method="post" style="display: inline;">
+        <form id="deleteForm" action="/delete" method="post" style="display: inline;" onsubmit="return confirmDelete()">
           <input type="hidden" name="PostNumber" value="<%= post.PostNumber %>">
           <button id="deleteButton" type="submit">삭제</button>
         </form>
-      </div>
-    <% } %>
+      <% } %>
+    </div>
 
     <!-- 댓글 섹션 -->
     <div class="comments-container">
@@ -102,5 +100,11 @@
       </div>
     </div>
   </div>
+
+  <script>
+    function confirmDelete() {
+      return confirm('게시글을 삭제하시겠습니까?');
+    }
+  </script>
 </body>
 </html>

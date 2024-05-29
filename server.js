@@ -1,10 +1,11 @@
-const express = require('express');
-const app = express();
-const mysql = require('mysql2');
-const session = require('express-session');
-const multer = require('multer');
-const path = require('path');
-const moment = require('moment');
+const express = require('express'); // Express 모듈 가져오기
+const app = express(); // Express 애플리케이션 생성
+const mysql = require('mysql2'); // MySQL 연결을 위한 라이브러리
+const session = require('express-session'); // 세션을 사용하기 위한 라이브러리
+const multer = require('multer'); // 파일 업로드를 위한 라이브러리
+const path = require('path'); // 파일 경로를 다루기 위한 라이브러리
+const moment = require('moment'); // 날짜 및 시간을 다루기 위한 라이브러리
+const cron = require('cron'); // 주기적으로 실행되는 작업을 설정하기 위한 라이브러리
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -29,7 +30,7 @@ db.connect(function(err) {
   console.log('연결 성공');
 });
 
-// Multer 설정
+// Multer 설정 
 const storage = multer.diskStorage({
   destination: function(req, file, cb) {
     cb(null, 'public/uploads/')
@@ -50,11 +51,17 @@ app.use(session({
   }
 }));
 
+// 매일 자정에 cacheRecommendations 함수 실행
+const job = new cron.CronJob('0 0 * * *', () => {
+  cacheRecommendations();
+}, null, true, 'Asia/Seoul');
+
+job.start();
+
 // 캐시에서 오늘의 추천 레시피 가져오기 또는 새로 설정하기
 function getTodayRecommendations(callback) {
   const cacheKey = 'today_recommendations';
   const now = moment().format('YYYY-MM-DD HH:mm:ss');
-  const tomorrow = moment().add(1, 'days').startOf('day').format('YYYY-MM-DD HH:mm:ss');
 
   // 캐시에서 오늘의 추천 레시피 가져오기
   const getCacheQuery = 'SELECT cache_value FROM Cache WHERE cache_key = ? AND expiration > ?';
@@ -66,42 +73,100 @@ function getTodayRecommendations(callback) {
 
     if (result.length > 0) {
       // 캐시된 추천 레시피가 있는 경우
-      const recommendations = JSON.parse(result[0].cache_value);
-      return callback(null, recommendations);
-    } else {
-      // 캐시된 추천 레시피가 없는 경우, 새로 설정
-      const randomPostsQuery = 'SELECT * FROM Post WHERE postdeleteflag = "N" ORDER BY RAND() LIMIT 3';
-      db.query(randomPostsQuery, (err, randomPosts) => {
+      let recommendations = JSON.parse(result[0].cache_value);
+
+      if (recommendations.length === 0) {
+        return callback(null, []);
+      }
+
+      // 삭제된 게시글이 있는지 확인하고 제거
+      const postNumbers = recommendations.map(post => post.PostNumber);
+      const checkDeletedQuery = 'SELECT PostNumber FROM Post WHERE PostNumber IN (?) AND postdeleteflag = "N"';
+      db.query(checkDeletedQuery, [postNumbers], (err, validPosts) => {
         if (err) {
-          console.error('무작위 게시글 가져오기 실패:', err);
+          console.error('게시글 검증 실패:', err);
           return callback(err);
         }
 
-        // 캐시에 새로 저장
-        const insertCacheQuery = 'INSERT INTO Cache (cache_key, cache_value, expiration) VALUES (?, ?, ?)';
-        db.query(insertCacheQuery, [cacheKey, JSON.stringify(randomPosts), tomorrow], (err) => {
-          if (err) {
-            console.error('캐시 저장 실패:', err);
-            return callback(err);
-          }
-          callback(null, randomPosts);
-        });
+        const validPostNumbers = validPosts.map(post => post.PostNumber);
+        recommendations = recommendations.filter(post => validPostNumbers.includes(post.PostNumber));
+
+        // 필요한 경우 새 게시글 추가
+        if (recommendations.length < 3) {
+          const additionalPostsQuery = `
+            SELECT * FROM Post 
+            WHERE postdeleteflag = "N" AND PostNumber NOT IN (?) 
+            ORDER BY RAND() 
+            LIMIT ?
+          `;
+          db.query(additionalPostsQuery, [validPostNumbers, 3 - recommendations.length], (err, additionalPosts) => {
+            if (err) {
+              console.error('추가 게시글 가져오기 실패:', err);
+              return callback(err);
+            }
+
+            recommendations = recommendations.concat(additionalPosts);
+            // 캐시에 다시 저장
+            const upsertCacheQuery = `
+              INSERT INTO Cache (cache_key, cache_value, expiration)
+              VALUES (?, ?, ?)
+              ON DUPLICATE KEY UPDATE
+                cache_value = VALUES(cache_value),
+                expiration = VALUES(expiration)
+            `;
+            const tomorrow = moment().add(1, 'days').startOf('day').format('YYYY-MM-DD HH:mm:ss');
+            db.query(upsertCacheQuery, [cacheKey, JSON.stringify(recommendations), tomorrow], (err) => {
+              if (err) {
+                console.error('캐시 업데이트 실패:', err);
+                return callback(err);
+              }
+              callback(null, recommendations);
+            });
+          });
+        } else {
+          callback(null, recommendations);
+        }
       });
+    } else {
+      // 캐시된 추천 레시피가 없는 경우, 새로 설정
+      cacheRecommendations(callback);
     }
   });
 }
 
-// 포인트 및 등급 업데이트 함수
-function updatePointsAndGrade(memberNumber, callback) {
-  const updateCountsQuery = `
-    UPDATE Member m
-    SET 
-      m.PostCount = (SELECT COUNT(*) FROM Post WHERE AuthorMemberNumber = m.MemberNumber),
-      m.CommentCount = (SELECT COUNT(*) FROM Comment WHERE CommentAuthorNumber = m.MemberNumber)
-    WHERE m.MemberNumber = ?`;
+// 오늘의 추천 레시피 캐시에 저장
+function cacheRecommendations(callback) {
+  const randomPostsQuery = 'SELECT * FROM Post WHERE postdeleteflag = "N" ORDER BY RAND() LIMIT 3';
+  const cacheKey = 'today_recommendations';
+  const tomorrow = moment().add(1, 'days').startOf('day').format('YYYY-MM-DD HH:mm:ss');
 
-  db.query(updateCountsQuery, [memberNumber], callback);
+  db.query(randomPostsQuery, (err, randomPosts) => {
+    if (err) {
+      console.error('무작위 게시글 가져오기 실패:', err);
+      if (callback) callback(err);
+      return;
+    }
+
+    const upsertCacheQuery = `
+      INSERT INTO Cache (cache_key, cache_value, expiration)
+      VALUES (?, ?, ?)
+      ON DUPLICATE KEY UPDATE
+        cache_value = VALUES(cache_value),
+        expiration = VALUES(expiration)
+    `;
+    db.query(upsertCacheQuery, [cacheKey, JSON.stringify(randomPosts), tomorrow], (err) => {
+      if (err) {
+        console.error('캐시 저장 실패:', err);
+        if (callback) callback(err);
+      } else if (callback) {
+        callback(null, randomPosts);
+      }
+    });
+  });
 }
+
+// // 서버 시작 시 캐시를 채움 여기부분 주석처리하면 서버 실행될때마다 캐시가 채워지지않음
+// cacheRecommendations();
 
 // 분류 페이지
 app.get('/categories', (req, res) => {
@@ -110,35 +175,92 @@ app.get('/categories', (req, res) => {
   const page = parseInt(req.query.page) || 1; // 현재 페이지 번호
   const itemsPerPage = 12; // 페이지당 항목 수
   const offset = (page - 1) * itemsPerPage;
+  const searchQuery = req.query.query || ''; // 검색어
+  const category = req.query.category || '';
+  const difficulty = req.query.difficulty || '';
+  const people = req.query.people || '';
+  const time = req.query.time || '';
 
-  let getPosts = '';
-  if (sort === 'views') {
-    getPosts = `SELECT p.*, 
-                      (SELECT COUNT(*) FROM Comment c WHERE c.CommentPostNumber = p.PostNumber) AS commentCount
-               FROM Post p 
-               WHERE p.postdeleteflag = "N" 
-               ORDER BY p.Views DESC 
-               LIMIT ?, ?`; 
-  } else {
-    getPosts = `SELECT p.*, 
-                      (SELECT COUNT(*) FROM Comment c WHERE c.CommentPostNumber = p.PostNumber) AS commentCount
-               FROM Post p 
-               WHERE p.postdeleteflag = "N" 
-               ORDER BY p.PostNumber DESC 
-               LIMIT ?, ?`; 
+  let getPosts = `
+    SELECT p.*, 
+           (SELECT COUNT(*) FROM Comment c WHERE c.CommentPostNumber = p.PostNumber) AS commentCount
+    FROM Post p 
+    WHERE p.postdeleteflag = "N"
+  `;
+  let queryParams = [];
+  
+  if (searchQuery) {
+    getPosts += ' AND p.Title LIKE ?';
+    queryParams.push(`%${searchQuery}%`);
   }
 
-  db.query(getPosts, [offset, itemsPerPage], (err, result) => {
+  if (category) {
+    getPosts += ' AND p.category = ?';
+    queryParams.push(category);
+  }
+
+  if (difficulty) {
+    getPosts += ' AND p.difficulty = ?';
+    queryParams.push(difficulty);
+  }
+
+  if (people) {
+    getPosts += ' AND p.people = ?';
+    queryParams.push(people);
+  }
+
+  if (time) {
+    getPosts += ' AND p.time = ?';
+    queryParams.push(time);
+  }
+
+  if (sort === 'views') {
+    getPosts += ' ORDER BY p.Views DESC';
+  } else {
+    getPosts += ' ORDER BY p.PostNumber DESC';
+  }
+
+  getPosts += ' LIMIT ?, ?';
+  queryParams.push(offset, itemsPerPage);
+
+  db.query(getPosts, queryParams, (err, result) => {
     if (err) {
       console.error('게시글 가져오기 실패: ' + err.stack);
-      return;
+      return res.status(500).send('Server error');
     }
 
-    const countQuery = 'SELECT COUNT(*) AS count FROM post WHERE postdeleteflag = "N"';
-    db.query(countQuery, (err, countResult) => {
+    let countQuery = 'SELECT COUNT(*) AS count FROM Post WHERE postdeleteflag = "N"';
+    let countParams = [];
+
+    if (searchQuery) {
+      countQuery += ' AND Title LIKE ?';
+      countParams.push(`%${searchQuery}%`);
+    }
+
+    if (category) {
+      countQuery += ' AND category = ?';
+      countParams.push(category);
+    }
+
+    if (difficulty) {
+      countQuery += ' AND difficulty = ?';
+      countParams.push(difficulty);
+    }
+
+    if (people) {
+      countQuery += ' AND people = ?';
+      countParams.push(people);
+    }
+
+    if (time) {
+      countQuery += ' AND time = ?';
+      countParams.push(time);
+    }
+
+    db.query(countQuery, countParams, (err, countResult) => {
       if (err) {
         console.error('게시글 수 가져오기 실패: ' + err.stack);
-        return;
+        return res.status(500).send('Server error');
       }
 
       const totalItems = countResult[0].count;
@@ -149,7 +271,12 @@ app.get('/categories', (req, res) => {
         post: result,
         sort: sort,
         currentPage: page,
-        totalPages: totalPages
+        totalPages: totalPages,
+        searchQuery: searchQuery,
+        category: category,
+        difficulty: difficulty,
+        people: people,
+        time: time
       });
     });
   });
@@ -163,9 +290,35 @@ app.get('/', (req, res) => {
     if (err) {
       return res.status(500).send('Server error');
     }
-    res.render('main.ejs', { user: user, randomPosts: randomPosts, message: null });
+    res.render('main', { user: user, randomPosts: randomPosts, message: null });
   });
 });
+
+app.get('/search', (req, res) => {
+  const searchQuery = req.query.query;
+  const searchSQL = 'SELECT * FROM Post WHERE Title LIKE ? AND postdeleteflag = "N"';
+  const searchValues = ['%' + searchQuery + '%'];
+
+  db.query(searchSQL, searchValues, (err, result) => {
+    if (err) {
+      console.error('검색 실패: ' + err.stack);
+      return res.status(500).send('Server error');
+    }
+    res.render('categories', { user: req.session.user, post: result, sort: 'search', currentPage: 1, totalPages: 1 });
+  });
+});
+
+// 회원정보 수정 페이지 라우트
+app.get('/edit-profile', (req, res) => {
+  const user = req.session.user;
+
+  if (!user) {
+    return res.status(401).send('<script type="text/javascript">alert("로그인이 필요한 서비스입니다."); window.location="/"; </script>');
+  }
+
+  res.render('edit-profile', { user: user });
+});
+
 
 app.get('/sign', (req, res) => {
   const user = req.session.user || {};
@@ -175,45 +328,38 @@ app.get('/sign', (req, res) => {
 
 app.get('/write', (req, res, next) => {
   if (!req.session.user) {
-    return res.status(401).send('<script type="text/javascript">alert("로그인이 필요한 서비스입니다."); window.location="/login"; </script>');
+    return res.status(401).send('<script type="text/javascript">alert("로그인이 필요한 서비스입니다."); window.location="/"; </script>');
   }
   next();
 }, (req, res) => {
   res.render('write.ejs', { user: req.session.user });
 });
 
-// 로그인 페이지
-app.get('/login', (req, res) => {
-  const user = req.session.user || {};
-  req.session.message = null;
-  res.render('login.ejs', { message: null, user: user });
-});
-
-// 로그인 기능
+//로그인 기능
 app.post('/login', (req, res) => {
   const { userId, userPassword } = req.body;
-  const loginQuery = 'SELECT MemberNumber, Nickname , Grade FROM Member WHERE MemberID = ? AND MemberPassword = ?';
+  const loginQuery = 'SELECT MemberNumber, Nickname, Grade, PostCount, CommentCount, memberdeleteflag FROM Member WHERE MemberID = ? AND MemberPassword = ?';
+  
   db.query(loginQuery, [userId, userPassword], (err, result) => {
     if (err) {
       console.error('로그인 실패: ' + err.stack);
-      return res.render('login', { message: '로그인 중 오류가 발생했습니다.', user: null });
+      return res.send('<script>alert("로그인 중 오류가 발생했습니다."); window.location.href="/";</script>');
     }
+    
     const user = result[0];
     if (user) {
-      // 포인트 및 등급 업데이트
-      updatePointsAndGrade(user.MemberNumber, (err) => {
-        if (err) {
-          console.error('포인트 및 등급 업데이트 실패: ' + err.stack);
-          return res.status(500).send('Server error');
-        }
-        req.session.user = user;
-        res.redirect('/');
-      });
+      if (user.memberdeleteflag === 'Y') {
+        return res.send('<script>alert("로그인 불가능한 아이디 입니다."); window.location.href="/";</script>');
+      }
+
+      req.session.user = user; // 로그인 시 유저 정보 세션에 저장
+      res.redirect('/');
     } else {
-      res.render('login', { message: '아이디 또는 비밀번호가 일치하지 않습니다.', user: null });
+      return res.send('<script>alert("아이디 또는 비밀번호가 일치하지 않습니다."); window.location.href="/";</script>');
     }
   });
 });
+
 
 // 로그아웃 기능
 app.get('/logout', (req, res) => {
@@ -269,17 +415,32 @@ app.post('/sign', (req, res) => {
   });
 });
 
-// 글쓰기 정보 받는 곳
+//글 작성 기능
 app.post('/write', upload.single('image'), (req, res) => {
   const { title, intro, method, category, people, time, difficulty, nickname, userId, timestamp } = req.body;
   const imagePath = req.file ? `/uploads/${req.file.filename}` : null;
-  const writePostQuery = 'INSERT INTO Post (AuthorMemberNumber, AuthorNickname, title, timestamp, intro, method, category, people, time, difficulty, ImagePath) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+  const writePostQuery = `INSERT INTO Post (AuthorMemberNumber, AuthorNickname, title, timestamp, intro, method, category, people, time, difficulty, ImagePath) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+
   db.query(writePostQuery, [userId, nickname, title, timestamp, intro, method, category, people, time, difficulty, imagePath], (err, result) => {
     if (err) {
       console.error('게시글 작성 실패: ' + err.stack);
       return;
     }
-    res.redirect('/');
+
+    // 글 작성 후 글 수 갱신
+    const updateCountsQuery = `
+      UPDATE Member m
+      SET 
+        m.PostCount = (SELECT COUNT(*) FROM Post WHERE AuthorMemberNumber = m.MemberNumber)
+      WHERE m.MemberNumber = ?`;
+
+    db.query(updateCountsQuery, [userId], (err) => {
+      if (err) {
+        console.error('글 수 업데이트 실패: ' + err.stack);
+        return;
+      }
+      res.redirect('/');
+    });
   });
 });
 
@@ -287,8 +448,8 @@ app.get('/post/:id', (req, res) => {
   const user = req.session.user || {};
   const PostNumber = req.params.id;
 
-  const postQuery = 'SELECT * FROM Post WHERE PostNumber = ? AND postdeleteflag = "N"';
-  const commentsQuery = 'SELECT * FROM Comment WHERE CommentPostNumber = ? ORDER BY CommentTimestamp DESC';
+  const postQuery = 'SELECT * FROM Post WHERE PostNumber = ? AND postdeleteflag = "N"'; // postdeleteflag가 N이고 PostNumber가 일치하는 게시글 조회 쿼리
+  const commentsQuery = 'SELECT * FROM Comment WHERE CommentPostNumber = ? ORDER BY CommentTimestamp DESC'; // CommentPostNumber가 일치하는 댓글을 최신순으로 조회하는 쿼리
 
   db.query(postQuery, [PostNumber], (err, postResult) => {
     if (err) {
@@ -303,14 +464,14 @@ app.get('/post/:id', (req, res) => {
         if (err) throw err;
         const comments = commentsResult;
 
-        const updateViewsQuery = `UPDATE Post SET Views = Views + 1 WHERE PostNumber = ?`;
+        const updateViewsQuery = 'UPDATE Post SET Views = Views + 1 WHERE PostNumber = ?'; // postnumber가 일치하는 게시글의 조회수를 1 증가시키는 쿼리
         db.query(updateViewsQuery, [PostNumber], (err) => {
           if (err) {
             console.error('조회수 업데이트 실패: ' + err);
             res.status(500).send('Server error');
             return;
           }
-          const addViewEventQuery = 'INSERT INTO ViewEvents (PostNumber, MemberNumber) VALUES (?, ?)';
+          const addViewEventQuery = 'INSERT INTO ViewEvents (PostNumber, MemberNumber) VALUES (?, ?)'; // 조회 이벤트를 기록하는 쿼리 (조회한 게시글의 번호와 조회한 회원의 번호를 기록)
           db.query(addViewEventQuery, [PostNumber, user.MemberNumber], (err) => {
             if (err) {
               console.error('조회 이벤트 기록 실패: ' + err.stack);
@@ -335,7 +496,7 @@ app.post('/post/:id/comment', (req, res) => {
 
   const PostNumber = req.params.id;
   const { commentContent } = req.body;
-  const insertCommentQuery = 'INSERT INTO Comment (CommentPostNumber, CommentAuthorNumber, CommentAuthorNickname, CommentContent, CommentTimestamp) VALUES (?, ?, ?, ?, NOW())';
+  const insertCommentQuery = 'INSERT INTO Comment (CommentPostNumber, CommentAuthorNumber, CommentAuthorNickname, CommentContent, CommentTimestamp) VALUES (?, ?, ?, ?, NOW())'; // 게시글 번호, 댓글 작성자 번호, 댓글 작성자 닉네임, 댓글 내용, 댓글 작성 시간을 기록하는 쿼리
 
   db.query(insertCommentQuery, [PostNumber, user.MemberNumber, user.Nickname, commentContent], (err, result) => {
     if (err) {
@@ -344,17 +505,24 @@ app.post('/post/:id/comment', (req, res) => {
     }
 
     const CommentNumber = result.insertId;
-    const addCommentEventQuery = 'INSERT INTO CommentEvents (CommentNumber, PostNumber, MemberNumber) VALUES (?, ?, ?)';
+    const addCommentEventQuery = 'INSERT INTO CommentEvents (CommentNumber, PostNumber, MemberNumber) VALUES (?, ?, ?)'; // 댓글 이벤트를 기록하는 쿼리 (댓글 번호, 게시글 번호, 댓글 작성자 번호를 기록)
+    
     db.query(addCommentEventQuery, [CommentNumber, PostNumber, user.MemberNumber], (err) => {
       if (err) {
         console.error('댓글 이벤트 기록 실패: ' + err.stack);
         return res.status(500).send('Server error');
       }
       
-      // 포인트 및 등급 업데이트
-      updatePointsAndGrade(user.MemberNumber, (err) => {
+      // 댓글 작성 후 댓글 수 갱신
+      const updateCountsQuery = `
+        UPDATE Member m
+        SET 
+          m.CommentCount = (SELECT COUNT(*) FROM Comment WHERE CommentAuthorNumber = m.MemberNumber)
+        WHERE m.MemberNumber = ?`;
+
+      db.query(updateCountsQuery, [user.MemberNumber], (err) => {
         if (err) {
-          console.error('포인트 및 등급 업데이트 실패: ' + err.stack);
+          console.error('댓글 수 업데이트 실패: ' + err.stack);
           return res.status(500).send('Server error');
         }
         res.redirect(`/post/${PostNumber}`);
@@ -421,7 +589,7 @@ app.post('/delete', (req, res) => {
 app.post('/post/:id/recommend', (req, res) => {
   const user = req.session.user;
   if (!user) {
-    return res.status(401).send('<script type="text/javascript">alert("로그인이 필요한 서비스입니다."); window.location="/login"; </script>');
+    return res.status(401).send('<script type="text/javascript">alert("로그인이 필요한 서비스입니다."); window.location="/"; </script>');
   }
 
   const PostNumber = req.params.id;
@@ -515,8 +683,101 @@ app.get('/ranking', (req, res) => {
   });
 });
 
+// 현재 비밀번호 확인 라우트
+app.post('/verify-password', (req, res) => {
+  const user = req.session.user;
+  const { currentPassword } = req.body;
+
+  if (!user) {
+    return res.status(401).send('<script type="text/javascript">alert("로그인이 필요한 서비스입니다."); window.location="/"; </script>');
+  }
+
+  const verifyPasswordQuery = 'SELECT MemberPassword FROM Member WHERE MemberNumber = ?';
+  db.query(verifyPasswordQuery, [user.MemberNumber], (err, result) => {
+    if (err) {
+      console.error('비밀번호 확인 실패: ' + err.stack);
+      return res.status(500).send('Server error');
+    }
+
+    if (result[0].MemberPassword === currentPassword) {
+      res.json({ success: true });
+    } else {
+      res.json({ success: false });
+    }
+  });
+});
+
+// 비밀번호 변경 라우트
+app.post('/change-password', (req, res) => {
+  const user = req.session.user;
+  const { newPassword, confirmPassword } = req.body;
+
+  if (!user) {
+    return res.status(401).send('<script type="text/javascript">alert("로그인이 필요한 서비스입니다."); window.location="/"; </script>');
+  }
+
+  if (newPassword !== confirmPassword) {
+    return res.send('<script type="text/javascript">alert("새 비밀번호와 비밀번호 확인이 일치하지 않습니다."); window.location="/edit-profile";</script>');
+  }
+
+  const changePasswordQuery = 'UPDATE Member SET MemberPassword = ? WHERE MemberNumber = ?';
+  db.query(changePasswordQuery, [newPassword, user.MemberNumber], (err, result) => {
+    if (err) {
+      console.error('비밀번호 변경 실패: ' + err.stack);
+      return res.status(500).send('Server error');
+    }
+    res.send('<script type="text/javascript">alert("비밀번호가 성공적으로 변경되었습니다."); window.location="/";</script>');
+  });
+});
+
+// 회원탈퇴 라우트
+app.get('/delete-account', (req, res) => {
+  const user = req.session.user;
+  if (!user) {
+    return res.status(401).send('<script type="text/javascript">alert("로그인이 필요한 서비스입니다."); window.location="/"; </script>');
+  }
+
+  const deleteAccountQuery = 'UPDATE Member SET memberdeleteflag = "Y" WHERE MemberNumber = ?';
+  db.query(deleteAccountQuery, [user.MemberNumber], (err, result) => {
+    if (err) {
+      console.error('회원탈퇴 실패: ' + err.stack);
+      return res.status(500).send('Server error');
+    }
+    req.session.destroy((err) => {
+      if (err) {
+        console.error('세션 제거 실패: ' + err);
+        return res.status(500).send('Server error');
+      }
+      res.send('<script type="text/javascript">alert("회원탈퇴가 완료되었습니다."); window.location="/"; </script>');
+    });
+  });
+});
+
+//유저 정보 가져오기
+app.get('/user-info', (req, res) => {
+  const user = req.session.user;
+
+  if (!user) {
+    return res.status(401).send({ error: 'Unauthorized' });
+  }
+
+  const getUserInfoQuery = 'SELECT MemberNumber, Nickname, Grade, (SELECT COUNT(*) FROM Post WHERE AuthorMemberNumber = MemberNumber) AS PostCount, (SELECT COUNT(*) FROM Comment WHERE CommentAuthorNumber = MemberNumber) AS CommentCount FROM Member WHERE MemberNumber = ?';
+
+  db.query(getUserInfoQuery, [user.MemberNumber], (err, result) => {
+    if (err) {
+      console.error('유저 정보 조회 실패: ' + err.stack);
+      return res.status(500).send({ error: 'Server error' });
+    }
+
+    if (result.length > 0) {
+      res.send(result[0]);
+    } else {
+      res.status(404).send({ error: 'User not found' });
+    }
+  });
+});
+
 // 서버 실행
 app.listen(8080, () => {
   console.log('http://localhost:8080 에서 서버 실행중');
 });
-

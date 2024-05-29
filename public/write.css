@@ -180,6 +180,16 @@ button[type="submit"]:hover {
   align-items: center;
 }
 
+.nav-center {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.nav-right {
+  margin-left: auto;
+}
+
 .nav-logo {
   font-size: 24px;
   color: white;
@@ -197,12 +207,88 @@ button[type="submit"]:hover {
   text-decoration: underline;
 }
 
-.info-group {
+/* 검색 박스 스타일 */
+.search-form {
   display: flex;
-  justify-content: space-between;
-  gap: 10px;
+  align-items: center;
 }
 
-.info-group select {
-  flex: 1;
+.search-box {
+  padding: 5px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  margin-right: 10px;
+}
+
+.search-button {
+  padding: 5px 10px;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.search-button:hover {
+  background-color: #45a049;
+}
+
+/* 모달 기본 스타일 */
+.modal {
+  display: none; /* 기본적으로 숨김 */
+  position: fixed; /* 스크롤해도 항상 보이도록 고정 */
+  z-index: 1; /* 다른 콘텐츠보다 위에 표시 */
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto; /* 스크롤이 필요한 경우 추가 */
+  background-color: rgba(0, 0, 0, 0.4); /* 배경 색상 (반투명) */
+}
+
+.modal.user-modal-position {
+  position: absolute; /* 유저 모달 위치 조정 */
+}
+
+/* 모달 콘텐츠 스타일 */
+.modal-content {
+  background-color: #fefefe;
+  margin: 15% auto; /* 상단에서 15% 떨어진 위치에 중앙에 배치 */
+  padding: 20px;
+  border: 1px solid #888;
+  width: 80%; /* 넓이 조정 */
+  max-width: 400px; /* 최대 넓이 설정 */
+}
+
+/* 닫기 버튼 스타일 */
+.close {
+  color: #aaa;
+  float: right;
+  font-size: 28px;
+  font-weight: bold;
+}
+
+.close:hover,
+.close:focus {
+  color: black;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.button {
+  display: block;
+  width: 100%;
+  padding: 10px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 16px;
+  cursor: pointer;
+  text-decoration: none;
+  text-align: center;
+}
+
+.button:hover {
+  background-color: #0056b3;
 }
