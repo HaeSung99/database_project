@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>회원가입</title>
     <link rel="stylesheet" href="/main.css">
+    <link rel="stylesheet" href="/sign.css"> <!-- 회원가입 페이지 전용 CSS -->
 </head>
 <body>
     <%- include ('partials/nav') %> <!-- 공통 네비게이션 바 포함 -->
@@ -15,15 +16,17 @@
         </script>
     <% } %>
 
-    <h1>회원가입</h1>
-    <form action="/sign" method="POST">
-        <label for="userId">아이디:</label>
-        <input type="text" id="userId" name="userId"><br><br>
-        <label for="userPassword">비밀번호:</label>
-        <input type="password" id="userPassword" name="userPassword"><br><br>
-        <label for="userNickname">닉네임:</label>
-        <input type="text" id="userNickname" name="userNickname"><br><br>
-        <button type="submit">가입하기</button>
-    </form>
+    <div class="sign-container">
+        <h1 class="sign-title">회원가입</h1>
+        <form action="/sign" method="POST" class="sign-form">
+            <label for="userId" class="sign-label">아이디:</label>
+            <input type="text" id="userId" name="userId" class="sign-input"><br><br>
+            <label for="userPassword" class="sign-label">비밀번호:</label>
+            <input type="password" id="userPassword" name="userPassword" class="sign-input"><br><br>
+            <label for="userNickname" class="sign-label">닉네임:</label>
+            <input type="text" id="userNickname" name="userNickname" class="sign-input"><br><br>
+            <button type="submit" class="sign-button">가입하기</button>
+        </form>
+    </div>
 </body>
 </html>

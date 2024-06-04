@@ -14,7 +14,6 @@
   <!-- 정렬 버튼 -->
   <div class="sort-buttons">
     <form action="/categories" method="get">
-      <input type="hidden" name="query" value="<%= searchQuery %>">
       <input type="hidden" name="sort" value="latest">
       <input type="hidden" name="category" value="<%= category %>">
       <input type="hidden" name="difficulty" value="<%= difficulty %>">
@@ -23,7 +22,6 @@
       <button type="submit" class="sort-button <%= sort === 'latest' ? 'active' : '' %>">최신순</button>
     </form>
     <form action="/categories" method="get">
-      <input type="hidden" name="query" value="<%= searchQuery %>">
       <input type="hidden" name="sort" value="views">
       <input type="hidden" name="category" value="<%= category %>">
       <input type="hidden" name="difficulty" value="<%= difficulty %>">
@@ -38,8 +36,6 @@
   <!-- 필터 박스 -->
   <div class="filter-box">
     <form id="filterForm" action="/categories" method="get">
-      <input type="hidden" name="query" value="<%= searchQuery %>">
-
       <div class="filter-group">
         <h2>카테고리</h2>
         <button type="button" class="filter-button <%= !category ? 'active' : '' %>" data-filter="category" data-value="">선택안함</button>
@@ -126,13 +122,13 @@
       <% if (i === currentPage) { %>
         <span class="current-page" style="margin: 0 5px;"><%= i %></span>
       <% } else { %>
-        <a href="/categories?page=<%= i %>&sort=<%= sort %>" style="margin: 0 5px;"><%= i %></a>
+        <a href="/categories?page=<%= i %>&sort=<%= sort %>&category=<%= category %>&difficulty=<%= difficulty %>&people=<%= people %>&time=<%= time %>" style="margin: 0 5px;"><%= i %></a>
       <% } %>
     <% } %>
   </div>
 
   <script>
-    document.querySelectorAll('.filter-button').forEach(button => {
+    document.querySelectorAll('.filter-button').forEach(button => { 
       button.addEventListener('click', () => {
         const filterType = button.getAttribute('data-filter');
         const filterValue = button.getAttribute('data-value');

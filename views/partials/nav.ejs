@@ -9,7 +9,7 @@
         <a href="/community" class="nav-item">커뮤니티</a>
     </div>
     <div class="nav-right">
-        <form action="/categories" method="GET" class="search-form">
+        <form action="/search" method="GET" class="search-form">
             <input type="text" name="query" class="search-box" placeholder="레시피 검색">
             <button type="submit" class="search-button">검색</button>
         </form>
@@ -106,14 +106,4 @@
             userModal.style.display = 'none';
         }
     <% } %>
-
-    // 모달 바깥 클릭 시 닫기
-    window.onclick = function(event) {
-        if (event.target == document.getElementById('loginModal')) {
-            document.getElementById('loginModal').style.display = 'none';
-        }
-        if (event.target == document.getElementById('userModal')) {
-            document.getElementById('userModal').style.display = 'none';
-        }
-    }
 </script>
