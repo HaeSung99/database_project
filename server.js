@@ -184,13 +184,9 @@ app.get('/categories', (req, res) => {
     getPosts += ' ORDER BY p.PostNumber DESC';
   }
 
-  // 여기까지가 조건에 따라 쿼리문을 만드는 부분
-
   // offset 은 내가 가져올 게시글의 첫번째 순서, itemsPerPage은 가져올 게시글의 수
-  // 예를 들면 2페이지를 누른다면 offset((page - 1) * itemsPerPage)은 12, itemsPerPage은 12가 되어야함
   getPosts += ' LIMIT ?, ?';
   queryParams.push(offset, itemsPerPage);
-
 
   // 게시글 가져오기  (위에서 만들어진 getPosts 라는 쿼리문을 실행한다 변수는 queryParams)
   db.query(getPosts, queryParams, (err, result) => {
@@ -240,11 +236,13 @@ app.get('/categories', (req, res) => {
         category: category,
         difficulty: difficulty,
         people: people,
-        time: time
+        time: time,
+        totalItems: totalItems // 전체 게시글 수를 전달
       });
     });
   });
 });
+
 
 // 메인페이지
 app.get('/', (req, res) => {
@@ -307,7 +305,8 @@ app.get('/search', (req, res) => {
         category: '',
         difficulty: '',
         people: '',
-        time: ''
+        time: '',
+        totalItems: totalItems // 전체 게시글 수를 전달
       });
     });
   });
@@ -502,7 +501,7 @@ app.get('/post/:id', (req, res) => {
 app.post('/post/:id/comment', (req, res) => {
   const user = req.session.user;
   if (!user) {
-    return res.send('<script type="text/javascript">alert("로그인이 필요한 서비스입니다."); window.location="/login"; </script>');
+    return res.send('<script type="text/javascript">alert("로그인이 필요한 서비스입니다."); window.location="/"; </script>');
   }
 
   const PostNumber = req.params.id;
