@@ -17,7 +17,7 @@ app.set('views', __dirname + '/views');
 const db = mysql.createConnection({
   host: 'localhost',
   user: 'root',
-  password: 'haesung8494@', // 데이터베이스 비밀번호
+  password: '8494', // 데이터베이스 비밀번호
   database: 'project'
 });
 
@@ -58,12 +58,11 @@ const job = new cron.CronJob('0 0 * * *', () => {
 
 job.start();
 
-// 캐시에서 오늘의 추천 레시피 가져오기 또는 새로 설정하기
+// getTodayRecommendations 함수 선언
 function getTodayRecommendations(callback) {
   const cacheKey = 'today_recommendations';
   const now = moment().format('YYYY-MM-DD HH:mm:ss');
 
-  // 캐시에서 오늘의 추천 레시피 가져오기
   const getCacheQuery = 'SELECT cache_value FROM Cache WHERE cache_key = ? AND expiration > ?';
   db.query(getCacheQuery, [cacheKey, now], (err, result) => {
     if (err) {
@@ -72,11 +71,9 @@ function getTodayRecommendations(callback) {
     }
 
     if (result.length > 0) {
-      // 캐시된 추천 레시피가 있는 경우
       const postNumbers = JSON.parse(result[0].cache_value);
 
-      if (postNumbers.length === 0) {
-        console.error('No post numbers found in cache');
+      if (!postNumbers || postNumbers.length === 0) {
         return callback(null, []);
       }
 
@@ -89,7 +86,6 @@ function getTodayRecommendations(callback) {
         callback(null, posts);
       });
     } else {
-      // 캐시된 추천 레시피가 없는 경우, 새로 설정
       cacheRecommendations(callback);
     }
   });
